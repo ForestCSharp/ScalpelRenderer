@@ -1,0 +1,54 @@
+#include <stdio.h>
+#include <string>
+#include <iostream>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <memory>
+
+#include "Renderer/Vulkan/VulkanRenderer.h"
+
+#include <vulkan/vulkan.hpp>
+#include <GLFW\glfw3.h>
+
+static void error_callback(int error, const char* description)
+{
+	fprintf(stderr, "Error %d: %s\n", error, description);
+}
+
+VulkanRenderer v;
+
+int main(int, char**)
+{
+	v.Startup();
+
+	// Setup window
+	glfwSetErrorCallback(error_callback);
+	if (!glfwInit())
+		return 1;
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	GLFWwindow* window = glfwCreateWindow(1080, 720, "Scalpel", NULL, NULL);
+	glfwMakeContextCurrent(window);
+
+	glClearColor(114, 144, 154, 255);
+
+	// Main loop
+	while (!glfwWindowShouldClose(window))
+	{
+		glfwPollEvents();
+
+		//TODO: remove OpenGL Stuff
+		int display_w, display_h;
+		glfwGetFramebufferSize(window, &display_w, &display_h);
+		glViewport(0, 0, display_w, display_h);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glfwSwapBuffers(window);
+	}
+
+	// Cleanup
+	glfwTerminate();
+
+	return 0;
+}
