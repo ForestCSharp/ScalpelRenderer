@@ -25,8 +25,8 @@ public: //Helper Functions
     //Physical and Logical device creation
     void CreateDeviceAndQueue();
 
-    //Surface Creation
-    void CreateSurface();
+    //Platform-Specific Surface Creation
+    void CreateGLFWSurface(struct GLFWwindow* window);
     
 protected:
 

@@ -15,12 +15,8 @@ static void error_callback(int error, const char* description)
 	fprintf(stderr, "Error %d: %s\n", error, description);
 }
 
-VulkanRenderer v;
-
 int main(int, char**)
 {
-	v.Startup();
-
 	// Setup window
 	glfwSetErrorCallback(error_callback);
 	if (!glfwInit())
@@ -30,6 +26,11 @@ int main(int, char**)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	GLFWwindow* window = glfwCreateWindow(1080, 720, "Scalpel", NULL, NULL);
 	glfwMakeContextCurrent(window);
+
+	//TODO: VULKAN RENDERER TESTING ERROR
+	VulkanRenderer v;
+	v.Startup();
+	v.CreateGLFWSurface(window);
 
 	glClearColor(114, 144, 154, 255);
 

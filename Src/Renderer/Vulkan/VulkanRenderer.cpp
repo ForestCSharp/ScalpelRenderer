@@ -23,7 +23,6 @@ void VulkanRenderer::Startup()
     CreateInstance();
     SetupDebugCallback();
     CreateDeviceAndQueue();
-    CreateSurface();
 }
 
 void VulkanRenderer::Shutdown()
@@ -283,7 +282,14 @@ void VulkanRenderer::CreateDeviceAndQueue()
     GraphicsQueue = Device.getQueue(GraphicsQueueIndex, 0);
 }
 
-void VulkanRenderer::CreateSurface()
+void VulkanRenderer::CreateGLFWSurface(GLFWwindow* window)
 {
+    VkSurfaceKHR tmp;
+    if (glfwCreateWindowSurface(Instance, window, nullptr, &tmp) != VK_SUCCESS) 
+    {
+        throw std::runtime_error("failed to create window surface!");
+    }
 
+    std::cout << "GLFW Surface Successfully Created" << std::endl;
+    Surface = tmp;
 }
