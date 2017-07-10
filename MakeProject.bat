@@ -1,5 +1,5 @@
-if not exist %~dp0\Build mkdir %~dp0\Build
+if not exist %~dp0Build mkdir %~dp0Build
 
-cd %~dp0\Build
+cd %~dp0Build
 
-START cmake ../ -G"Visual Studio 15 Win64"
+cmake ../ -G"Visual Studio 15 Win64"

@@ -7,7 +7,6 @@
 
 #include "Renderer/Vulkan/VulkanRenderer.h"
 
-#include <vulkan/vulkan.hpp>
 #include <GLFW\glfw3.h>
 
 static void error_callback(int error, const char* description)
