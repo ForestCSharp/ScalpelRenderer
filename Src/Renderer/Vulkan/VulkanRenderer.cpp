@@ -29,6 +29,7 @@ void VulkanRenderer::Shutdown()
 {
     std::cout << "--- BEGIN VULKAN RENDERER SHUTDOWN ---" << std::endl;
 
+    Instance.destroySurfaceKHR(Surface, nullptr);
     Device.destroy(nullptr);
     RemoveDebugCallback();
     Instance.destroy(nullptr);

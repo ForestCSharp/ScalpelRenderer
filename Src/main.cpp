@@ -26,7 +26,7 @@ int main(int, char**)
 	GLFWwindow* window = glfwCreateWindow(1080, 720, "Scalpel", NULL, NULL);
 	glfwMakeContextCurrent(window);
 
-	//TODO: VULKAN RENDERER TESTING ERROR
+	//TODO: VULKAN RENDERER TESTING
 	VulkanRenderer v;
 	v.Startup();
 	v.CreateGLFWSurface(window);
