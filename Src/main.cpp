@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "Renderer/Vulkan/VulkanRenderer.h"
+#include "Renderer/Vulkan/VulkanCommandBuffer.h"
 
 #include <GLFW\glfw3.h>
 
@@ -27,11 +28,18 @@ int main(int, char**)
 	glfwMakeContextCurrent(window);
 
 	//TODO: VULKAN RENDERER TESTING
-	VulkanRenderer v;
-	v.Startup();
-	v.CreateGLFWSurface(window);
+	VulkanRenderer* v = VulkanRenderer::Get();
+	v->Startup();
+	v->CreateGLFWSurface(window);
 
-	glClearColor(114, 144, 154, 255);
+	VulkanCommandBuffer CmdBuffer;
+	CmdBuffer.Begin();
+	/* ... Rendering Commands Here ... */
+	CmdBuffer.Get().setLineWidth(4.0f);
+	CmdBuffer.End();
+
+
+	glClearColor(0, 0, 100, 1);
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))

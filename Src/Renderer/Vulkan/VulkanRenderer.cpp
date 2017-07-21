@@ -7,6 +7,8 @@
 #define ENABLE_VK_VALIDATION 1
 #define VERBOSE_VALIDATION 0
 
+VulkanRenderer *VulkanRenderer::SingletonPtr = 0;
+
 VulkanRenderer::VulkanRenderer()
 {
 
@@ -23,6 +25,7 @@ void VulkanRenderer::Startup()
     CreateInstance();
     SetupDebugCallback();
     CreateDeviceAndQueue();
+	CreateCommandPool();
 }
 
 void VulkanRenderer::Shutdown()
@@ -218,8 +221,6 @@ void VulkanRenderer::CreateDeviceAndQueue()
     //Actually fetch the physical devices
     std::vector<vk::PhysicalDevice> Devices{ PhysicalDeviceCount };
     Instance.enumeratePhysicalDevices(&PhysicalDeviceCount, Devices.data());
-    
-    int GraphicsQueueIndex = -1;
 
     //Find A device that supports graphics queue
     for (auto CurrPhysicalDevice : Devices)
@@ -241,10 +242,12 @@ void VulkanRenderer::CreateDeviceAndQueue()
 
         for (int i = 0; i < QueueFamilyProperties.size(); ++i)
         {
+			//Need queue that supports graphics and presnetation
             if (QueueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics)
             {
                 PhysicalDevice = CurrPhysicalDevice;
                 GraphicsQueueIndex = i;
+
                 std::cout << "Using Device with Graphics Queue Support: " << PhysicalDeviceProperties.deviceName << std::endl;
                 break;
             }
@@ -293,4 +296,21 @@ void VulkanRenderer::CreateGLFWSurface(GLFWwindow* window)
 
     std::cout << "GLFW Surface Successfully Created" << std::endl;
     Surface = tmp;
+
+	//Ensure our graphics queue also has presentation support 
+	VkBool32 presentSupport = false;
+	PhysicalDevice.getSurfaceSupportKHR(GraphicsQueueIndex, Surface, &presentSupport);
+	if (!presentSupport)
+	{
+		std::cout << "ERROR: Graphics Queue doesn't support presentation" << std::endl;
+	}
+	// (TODO: use secondary present queue as fallback)
+}
+
+void VulkanRenderer::CreateCommandPool()
+{
+	vk::CommandPoolCreateInfo CreateInfo;
+	CreateInfo.queueFamilyIndex = GraphicsQueueIndex;
+
+	CommandPool = Device.createCommandPool(CreateInfo);
 }

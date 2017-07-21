@@ -2,11 +2,14 @@
 
 #include <vulkan/vulkan.hpp>
 
+//Vulkan Renderer Singleton Class
+//Manages long-persisting vulkan data structures
+//Instance, Devices, Queues, CommandPool
 class VulkanRenderer
 {
-public:
-
     VulkanRenderer();
+
+public:
     ~VulkanRenderer();
 
     virtual void Startup();
@@ -24,6 +27,12 @@ public: //Helper Functions
 
     //Physical and Logical device creation
     void CreateDeviceAndQueue();
+	vk::Device GetDevice() {return Device;}
+	vk::Queue GetQueue() {return GraphicsQueue;}
+
+	//Creates a command pool from which to create command buffers
+	void CreateCommandPool();
+	vk::CommandPool GetCommandPool() {return CommandPool;}
 
     //Platform-Specific Surface Creation
     void CreateGLFWSurface(struct GLFWwindow* window);
@@ -31,12 +40,32 @@ public: //Helper Functions
 protected:
 
     vk::Instance Instance;
+
     VkDebugReportCallbackEXT callback;
 
     vk::PhysicalDevice PhysicalDevice;
     vk::Device Device;
+
     vk::Queue GraphicsQueue;
+	int GraphicsQueueIndex = -1;
 
     vk::SurfaceKHR Surface;
 
+	vk::CommandPool CommandPool;
+
+public:
+
+    static VulkanRenderer *Get()
+    {
+        if (!SingletonPtr)
+		{
+          SingletonPtr = new VulkanRenderer;
+		}
+
+        return SingletonPtr;
+    }
+
+private:
+
+	static VulkanRenderer* SingletonPtr;
 };
