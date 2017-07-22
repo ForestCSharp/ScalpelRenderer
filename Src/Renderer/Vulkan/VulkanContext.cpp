@@ -1,4 +1,4 @@
-#include "VulkanRenderer.h"
+#include "VulkanContext.h"
 #include <vulkan/vulkan.hpp>
 #include <vector>
 #include <iostream>
@@ -7,19 +7,19 @@
 #define ENABLE_VK_VALIDATION 1
 #define VERBOSE_VALIDATION 0
 
-VulkanRenderer *VulkanRenderer::SingletonPtr = 0;
+VulkanContext *VulkanContext::SingletonPtr = nullptr;
 
-VulkanRenderer::VulkanRenderer()
+VulkanContext::VulkanContext()
 {
 
 }
 
-VulkanRenderer::~VulkanRenderer()
+VulkanContext::~VulkanContext()
 {
-    Shutdown();
+
 }
 
-void VulkanRenderer::Startup()
+void VulkanContext::Startup()
 {
     std::cout << "--- BEGIN VULKAN RENDERER STARTUP ---" << std::endl;
     CreateInstance();
@@ -28,17 +28,18 @@ void VulkanRenderer::Startup()
 	CreateCommandPool();
 }
 
-void VulkanRenderer::Shutdown()
+void VulkanContext::Shutdown()
 {
     std::cout << "--- BEGIN VULKAN RENDERER SHUTDOWN ---" << std::endl;
 
+	Device.destroyCommandPool(CommandPool, nullptr);
     Instance.destroySurfaceKHR(Surface, nullptr);
     Device.destroy(nullptr);
     RemoveDebugCallback();
     Instance.destroy(nullptr);
 }
 
-void VulkanRenderer::CreateInstance()
+void VulkanContext::CreateInstance()
 {
     vk::ApplicationInfo appInfo;
     appInfo.pApplicationName = "Scalpel";
@@ -90,7 +91,7 @@ void VulkanRenderer::CreateInstance()
     }
 }
 
-bool VulkanRenderer::CheckExtensionSupport(const std::vector<const char*>& extensions)
+bool VulkanContext::CheckExtensionSupport(const std::vector<const char*>& extensions)
 {
     uint32_t extensionCount;
     vk::enumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
@@ -121,7 +122,7 @@ bool VulkanRenderer::CheckExtensionSupport(const std::vector<const char*>& exten
     return true;
 }
 
-bool VulkanRenderer::CheckValidationLayerSupport(const std::vector<const char*>& validationLayers)
+bool VulkanContext::CheckValidationLayerSupport(const std::vector<const char*>& validationLayers)
 {
     uint32_t layerCount;
     vk::enumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -188,7 +189,7 @@ void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT
     }
 }
 
-void VulkanRenderer::SetupDebugCallback()
+void VulkanContext::SetupDebugCallback()
 {
 #if ENABLE_VK_VALIDATION
     VkDebugReportCallbackCreateInfoEXT createInfo = {};
@@ -205,14 +206,14 @@ void VulkanRenderer::SetupDebugCallback()
 #endif
 }
 
-void VulkanRenderer::RemoveDebugCallback()
+void VulkanContext::RemoveDebugCallback()
 {
 #if ENABLE_VK_VALIDATION
     DestroyDebugReportCallbackEXT(Instance, callback, nullptr);
 #endif
 }
 
-void VulkanRenderer::CreateDeviceAndQueue()
+void VulkanContext::CreateDeviceAndQueue()
 {
     //Count the physical devices
     uint32_t PhysicalDeviceCount = 0;
@@ -286,7 +287,7 @@ void VulkanRenderer::CreateDeviceAndQueue()
     GraphicsQueue = Device.getQueue(GraphicsQueueIndex, 0);
 }
 
-void VulkanRenderer::CreateGLFWSurface(GLFWwindow* window)
+void VulkanContext::CreateGLFWSurface(GLFWwindow* window)
 {
     VkSurfaceKHR tmp;
     if (glfwCreateWindowSurface(Instance, window, nullptr, &tmp) != VK_SUCCESS) 
@@ -307,7 +308,7 @@ void VulkanRenderer::CreateGLFWSurface(GLFWwindow* window)
 	// (TODO: use secondary present queue as fallback)
 }
 
-void VulkanRenderer::CreateCommandPool()
+void VulkanContext::CreateCommandPool()
 {
 	vk::CommandPoolCreateInfo CreateInfo;
 	CreateInfo.queueFamilyIndex = GraphicsQueueIndex;

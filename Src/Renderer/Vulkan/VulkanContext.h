@@ -5,12 +5,12 @@
 //Vulkan Renderer Singleton Class
 //Manages long-persisting vulkan data structures
 //Instance, Devices, Queues, CommandPool
-class VulkanRenderer
+class VulkanContext
 {
-    VulkanRenderer();
+    VulkanContext();
 
 public:
-    ~VulkanRenderer();
+    ~VulkanContext();
 
     virtual void Startup();
 
@@ -55,11 +55,11 @@ protected:
 
 public:
 
-    static VulkanRenderer *Get()
+    static VulkanContext *Get()
     {
         if (!SingletonPtr)
 		{
-          SingletonPtr = new VulkanRenderer;
+          SingletonPtr = new VulkanContext;
 		}
 
         return SingletonPtr;
@@ -67,5 +67,5 @@ public:
 
 private:
 
-	static VulkanRenderer* SingletonPtr;
+	static VulkanContext* SingletonPtr;
 };

@@ -5,7 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <memory>
 
-#include "Renderer/Vulkan/VulkanRenderer.h"
+#include "Renderer/Vulkan/VulkanContext.h"
 #include "Renderer/Vulkan/VulkanCommandBuffer.h"
 
 #include <GLFW\glfw3.h>
@@ -28,14 +28,14 @@ int main(int, char**)
 	glfwMakeContextCurrent(window);
 
 	//TODO: VULKAN RENDERER TESTING
-	VulkanRenderer* v = VulkanRenderer::Get();
+	VulkanContext* v = VulkanContext::Get();
 	v->Startup();
 	v->CreateGLFWSurface(window);
 
 	VulkanCommandBuffer CmdBuffer;
 	CmdBuffer.Begin();
 	/* ... Rendering Commands Here ... */
-	CmdBuffer.Get().setLineWidth(4.0f);
+	CmdBuffer().setLineWidth(4.0f);
 	CmdBuffer.End();
 
 
@@ -54,6 +54,8 @@ int main(int, char**)
 
 		glfwSwapBuffers(window);
 	}
+
+	VulkanContext::Get()-> Shutdown();
 
 	// Cleanup
 	glfwTerminate();
