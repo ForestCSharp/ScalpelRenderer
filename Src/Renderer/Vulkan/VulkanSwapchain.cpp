@@ -8,11 +8,18 @@
 VulkanSwapchain::VulkanSwapchain()
 {
 	CreateSwapchain();
+	CreateImageViews();
 }
 
 void VulkanSwapchain::Destroy()
 {
 	std::cout << "--- DESTROY SURFACE AND SWAPCHAIN ---" << std::endl;
+	
+	for (auto& ImageView : SwapchainImageViews)
+	{
+		VulkanContext::Get()->GetDevice().destroyImageView(ImageView);
+	}
+
 	VulkanContext::Get()->GetDevice().destroySwapchainKHR(Swapchain);
 }
 
@@ -50,7 +57,6 @@ void VulkanSwapchain::CreateSwapchain()
 	CreateInfo.presentMode = PresentMode;
 
 	Swapchain = VulkanContext::Get()->GetDevice().createSwapchainKHR(CreateInfo);
-	
 	SwapchainImages = VulkanContext::Get()->GetDevice().getSwapchainImagesKHR(Swapchain);
 
 	std::cout << "Swapchain Successfully created" << std::endl;
@@ -108,4 +114,34 @@ vk::PresentModeKHR VulkanSwapchain::ChooseSwapchainPresentMode()
     }
 
 	return bestMode;
+}
+
+void VulkanSwapchain::CreateImageViews()
+{
+	SwapchainImageViews.clear();
+
+	for (size_t i=0; i < SwapchainImages.size(); ++i)
+	{
+		vk::ImageViewCreateInfo CreateInfo;
+
+		//Basic Info
+		CreateInfo.image = SwapchainImages[i];
+		CreateInfo.viewType = vk::ImageViewType::e2D;
+		CreateInfo.format = SwapchainImageFormat;
+
+		//Channel Mapping
+		CreateInfo.components.r = vk::ComponentSwizzle::eIdentity;
+		CreateInfo.components.g = vk::ComponentSwizzle::eIdentity;
+		CreateInfo.components.b = vk::ComponentSwizzle::eIdentity;
+		CreateInfo.components.a = vk::ComponentSwizzle::eIdentity;
+
+		//Purpose of this image
+		CreateInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		CreateInfo.subresourceRange.baseMipLevel = 0;
+		CreateInfo.subresourceRange.levelCount = 1;
+		CreateInfo.subresourceRange.baseArrayLayer = 0;
+		CreateInfo.subresourceRange.layerCount = 1;
+
+		SwapchainImageViews.push_back(VulkanContext::Get()->GetDevice().createImageView(CreateInfo));
+	}
 }

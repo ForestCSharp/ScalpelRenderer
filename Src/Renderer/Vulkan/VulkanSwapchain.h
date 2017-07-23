@@ -12,6 +12,7 @@ public:
 	void Destroy();
 
 	void CreateSwapchain();
+	void CreateImageViews();
 	vk::SwapchainKHR GetSwapchain() {return Swapchain;}
 
 	vk::SurfaceFormatKHR ChooseSwapchainFormat();
@@ -22,11 +23,7 @@ protected:
 	vk::SwapchainKHR Swapchain;
 
 	vk::Extent2D SwapchainExtent;
-	std::vector<vk::Image> SwapchainImages;
 	vk::Format SwapchainImageFormat;
-
-protected:
-
-	uint32_t PresentQueueIndex;
-	vk::Queue PresentQueue;
+	std::vector<vk::Image> SwapchainImages;
+	std::vector<vk::ImageView> SwapchainImageViews;
 };

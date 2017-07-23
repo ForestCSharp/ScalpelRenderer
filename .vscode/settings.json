@@ -57,7 +57,9 @@
 		"window.c": "cpp",
 		"mir_window.c": "cpp",
 		"events.c": "cpp",
-		"threads.c": "cpp"
+		"threads.c": "cpp",
+		"set": "cpp",
+		"xtree": "cpp"
 	},
     "python.linting.pylintEnabled": false
 }
