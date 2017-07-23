@@ -33,7 +33,6 @@ void VulkanContext::Shutdown()
     std::cout << "--- BEGIN VULKAN RENDERER SHUTDOWN ---" << std::endl;
 
 	Device.destroyCommandPool(CommandPool, nullptr);
-    Instance.destroySurfaceKHR(Surface, nullptr);
     Device.destroy(nullptr);
     RemoveDebugCallback();
     Instance.destroy(nullptr);
@@ -277,7 +276,7 @@ void VulkanContext::CreateDeviceAndQueue()
 
     std::vector<const char*> deviceExtensions =
     {
-        "VK_KHR_swapchain"
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
     DeviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
@@ -285,27 +284,6 @@ void VulkanContext::CreateDeviceAndQueue()
     Device = PhysicalDevice.createDevice(DeviceCreateInfo, nullptr);
 
     GraphicsQueue = Device.getQueue(GraphicsQueueIndex, 0);
-}
-
-void VulkanContext::CreateGLFWSurface(GLFWwindow* window)
-{
-    VkSurfaceKHR tmp;
-    if (glfwCreateWindowSurface(Instance, window, nullptr, &tmp) != VK_SUCCESS) 
-    {
-        throw std::runtime_error("failed to create window surface!");
-    }
-
-    std::cout << "GLFW Surface Successfully Created" << std::endl;
-    Surface = tmp;
-
-	//Ensure our graphics queue also has presentation support 
-	VkBool32 presentSupport = false;
-	PhysicalDevice.getSurfaceSupportKHR(GraphicsQueueIndex, Surface, &presentSupport);
-	if (!presentSupport)
-	{
-		std::cout << "ERROR: Graphics Queue doesn't support presentation" << std::endl;
-	}
-	// (TODO: use secondary present queue as fallback)
 }
 
 void VulkanContext::CreateCommandPool()

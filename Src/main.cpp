@@ -7,6 +7,7 @@
 
 #include "Renderer/Vulkan/VulkanContext.h"
 #include "Renderer/Vulkan/VulkanCommandBuffer.h"
+#include "Renderer/Vulkan/VulkanSwapchain.h"
 
 #include <GLFW\glfw3.h>
 
@@ -30,12 +31,13 @@ int main(int, char**)
 	//TODO: VULKAN RENDERER TESTING
 	VulkanContext* v = VulkanContext::Get();
 	v->Startup();
-	v->CreateGLFWSurface(window);
+	//Create GLFW-based Surface/Swapchain
+	VulkanSwapchain Swapchain(window);
 
 	VulkanCommandBuffer CmdBuffer;
 	CmdBuffer.Begin();
 	/* ... Rendering Commands Here ... */
-	CmdBuffer().setLineWidth(4.0f);
+
 	CmdBuffer.End();
 
 
@@ -55,7 +57,8 @@ int main(int, char**)
 		glfwSwapBuffers(window);
 	}
 
-	VulkanContext::Get()-> Shutdown();
+	Swapchain.Destroy();
+	VulkanContext::Get()->Shutdown();
 
 	// Cleanup
 	glfwTerminate();

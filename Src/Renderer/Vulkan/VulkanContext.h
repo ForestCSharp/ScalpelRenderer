@@ -20,6 +20,8 @@ public: //Helper Functions
 
     //Instance Creation (and validation layer setup)
     void CreateInstance();
+	vk::Instance GetInstance() {return Instance;}
+
     bool CheckExtensionSupport(const std::vector<const char*>& extensions);
     bool CheckValidationLayerSupport(const std::vector<const char*>& validationLayers);
     void SetupDebugCallback();
@@ -27,15 +29,14 @@ public: //Helper Functions
 
     //Physical and Logical device creation
     void CreateDeviceAndQueue();
-	vk::Device GetDevice() {return Device;}
-	vk::Queue GetQueue() {return GraphicsQueue;}
+	const vk::PhysicalDevice GetPhysicalDevice() {return PhysicalDevice;}
+	const vk::Device GetDevice() {return Device;}
+	const vk::Queue GetQueue() {return GraphicsQueue;}
+	const int GetGraphicsQueueIndex() {return GraphicsQueueIndex;}
 
 	//Creates a command pool from which to create command buffers
 	void CreateCommandPool();
 	vk::CommandPool GetCommandPool() {return CommandPool;}
-
-    //Platform-Specific Surface Creation
-    void CreateGLFWSurface(struct GLFWwindow* window);
     
 protected:
 
@@ -48,8 +49,6 @@ protected:
 
     vk::Queue GraphicsQueue;
 	int GraphicsQueueIndex = -1;
-
-    vk::SurfaceKHR Surface;
 
 	vk::CommandPool CommandPool;
 
