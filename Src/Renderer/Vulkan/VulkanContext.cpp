@@ -1,6 +1,7 @@
 #include "VulkanContext.h"
 #include <vulkan/vulkan.hpp>
 #include <vector>
+#include <set>
 #include <iostream>
 #include <GLFW\glfw3.h>
 
@@ -19,12 +20,13 @@ VulkanContext::~VulkanContext()
 
 }
 
-void VulkanContext::Startup()
+void VulkanContext::Startup(GLFWwindow* window)
 {
     std::cout << "--- BEGIN VULKAN RENDERER STARTUP ---" << std::endl;
     CreateInstance();
     SetupDebugCallback();
-    CreateDeviceAndQueue();
+	CreateGLFWSurface(window);
+    CreateDeviceAndQueues();
 	CreateCommandPool();
 }
 
@@ -212,58 +214,62 @@ void VulkanContext::RemoveDebugCallback()
 #endif
 }
 
-void VulkanContext::CreateDeviceAndQueue()
-{
-    //Count the physical devices
-    uint32_t PhysicalDeviceCount = 0;
-    Instance.enumeratePhysicalDevices(&PhysicalDeviceCount, nullptr);
-    
+void VulkanContext::CreateDeviceAndQueues()
+{  
     //Actually fetch the physical devices
-    std::vector<vk::PhysicalDevice> Devices{ PhysicalDeviceCount };
-    Instance.enumeratePhysicalDevices(&PhysicalDeviceCount, Devices.data());
-
+    std::vector<vk::PhysicalDevice> Devices = Instance.enumeratePhysicalDevices();
+    
     //Find A device that supports graphics queue
     for (auto CurrPhysicalDevice : Devices)
-    {     
+    { 
         //Get Physical Device Properties
-        vk::PhysicalDeviceProperties PhysicalDeviceProperties;
-        PhysicalDeviceProperties = CurrPhysicalDevice.getProperties();
-
-        uint32_t QueueFamilyPropertyCount = 0;
-
-        //Count Queue Family Properties
-        CurrPhysicalDevice.getQueueFamilyProperties(&QueueFamilyPropertyCount, nullptr);
+        vk::PhysicalDeviceProperties PhysicalDeviceProperties = CurrPhysicalDevice.getProperties();
 
         //Actually Get Queue Family Properties
-        std::vector<vk::QueueFamilyProperties> QueueFamilyProperties{ QueueFamilyPropertyCount };
-        CurrPhysicalDevice.getQueueFamilyProperties(&QueueFamilyPropertyCount, QueueFamilyProperties.data());
+		std::vector<vk::QueueFamilyProperties> QueueFamilyProperties = CurrPhysicalDevice.getQueueFamilyProperties();
 
         //TODO: Check device for needed features here before committing to it (64 bit fp ops, texture compression, etc.)
-
         for (int i = 0; i < QueueFamilyProperties.size(); ++i)
         {
 			//Need queue that supports graphics and presnetation
             if (QueueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics)
             {
-                PhysicalDevice = CurrPhysicalDevice;
                 GraphicsQueueIndex = i;
-
-                std::cout << "Using Device with Graphics Queue Support: " << PhysicalDeviceProperties.deviceName << std::endl;
-                break;
+                std::cout << "Using Device with Graphics Queue Support: " << PhysicalDeviceProperties.deviceName <<  " | Graphics Index: " << i << std::endl;  
             }
+
+			//Ensure our graphics queue also has presentation support 
+			if (CurrPhysicalDevice.getSurfaceSupportKHR(i, Surface))
+			{
+				PresentQueueIndex = i;
+				std::cout << "Using Device with Presentation Queue Support:"  << PhysicalDeviceProperties.deviceName <<  " | Presentation Index: "<< i << std::endl;
+			}
+
+			if (GraphicsQueueIndex != -1 && PresentQueueIndex != -1)
+			{
+				//Found the device that supports our needs
+				PhysicalDevice = CurrPhysicalDevice;
+				break;
+			}
         }
     }
 
-    vk::DeviceQueueCreateInfo DeviceQueueCreateInfo = {};
-    DeviceQueueCreateInfo.queueCount = 1;
-    DeviceQueueCreateInfo.queueFamilyIndex = GraphicsQueueIndex;
+	std::vector<vk::DeviceQueueCreateInfo> QueueCreateInfos;
+	std::set<int> UniqueQueueFamilies = {GraphicsQueueIndex, PresentQueueIndex};
 
-    static const float QueuePriorities[] = { 1.0f };
-    DeviceQueueCreateInfo.pQueuePriorities = QueuePriorities;
+	float QueuePriority = 1.0f;
+	for (int QueueFamily : UniqueQueueFamilies) 
+	{
+		vk::DeviceQueueCreateInfo QueueCreateInfo;
+		QueueCreateInfo.queueFamilyIndex = QueueFamily;
+		QueueCreateInfo.queueCount = 1;
+		QueueCreateInfo.pQueuePriorities = &QueuePriority;
+		QueueCreateInfos.push_back(QueueCreateInfo);
+	}
 
     vk::DeviceCreateInfo DeviceCreateInfo = {};
-    DeviceCreateInfo.queueCreateInfoCount = 1;
-    DeviceCreateInfo.pQueueCreateInfos = &DeviceQueueCreateInfo;
+    DeviceCreateInfo.queueCreateInfoCount =static_cast<uint32_t>(QueueCreateInfos.size());
+    DeviceCreateInfo.pQueueCreateInfos = QueueCreateInfos.data();
 
     std::vector<const char*> DeviceLayers;
 
@@ -284,6 +290,7 @@ void VulkanContext::CreateDeviceAndQueue()
     Device = PhysicalDevice.createDevice(DeviceCreateInfo, nullptr);
 
     GraphicsQueue = Device.getQueue(GraphicsQueueIndex, 0);
+	PresentQueue = Device.getQueue(PresentQueueIndex, 0);
 }
 
 void VulkanContext::CreateCommandPool()
@@ -292,4 +299,16 @@ void VulkanContext::CreateCommandPool()
 	CreateInfo.queueFamilyIndex = GraphicsQueueIndex;
 
 	CommandPool = Device.createCommandPool(CreateInfo);
+}
+
+void VulkanContext::CreateGLFWSurface(GLFWwindow* window)
+{
+    VkSurfaceKHR tmp;
+    if (glfwCreateWindowSurface(VulkanContext::Get()->GetInstance(), window, nullptr, &tmp) != VK_SUCCESS) 
+    {
+        throw std::runtime_error("failed to create window surface!");
+    }
+
+    std::cout << "GLFW Surface Successfully Created" << std::endl;
+    Surface = tmp;
 }

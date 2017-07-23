@@ -30,9 +30,8 @@ int main(int, char**)
 
 	//TODO: VULKAN RENDERER TESTING
 	VulkanContext* v = VulkanContext::Get();
-	v->Startup();
-	//Create GLFW-based Surface/Swapchain
-	VulkanSwapchain Swapchain(window);
+	v->Startup(window);
+	VulkanSwapchain Swapchain;
 
 	VulkanCommandBuffer CmdBuffer;
 	CmdBuffer.Begin();

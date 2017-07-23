@@ -5,9 +5,8 @@
 #include <vector>
 #include <glfw/glfw3.h>
 
-VulkanSwapchain::VulkanSwapchain(GLFWwindow* window)
+VulkanSwapchain::VulkanSwapchain()
 {
-	CreateGLFWSurface(window);
 	CreateSwapchain();
 }
 
@@ -15,28 +14,6 @@ void VulkanSwapchain::Destroy()
 {
 	std::cout << "--- DESTROY SURFACE AND SWAPCHAIN ---" << std::endl;
 	VulkanContext::Get()->GetDevice().destroySwapchainKHR(Swapchain);
-	VulkanContext::Get()->GetInstance().destroySurfaceKHR(Surface);
-}
-
-void VulkanSwapchain::CreateGLFWSurface(GLFWwindow* window)
-{
-    VkSurfaceKHR tmp;
-    if (glfwCreateWindowSurface(VulkanContext::Get()->GetInstance(), window, nullptr, &tmp) != VK_SUCCESS) 
-    {
-        throw std::runtime_error("failed to create window surface!");
-    }
-
-    std::cout << "GLFW Surface Successfully Created" << std::endl;
-    Surface = tmp;
-
-	//Ensure our graphics queue also has presentation support 
-	VkBool32 presentSupport = false;
-	VulkanContext::Get()->GetPhysicalDevice().getSurfaceSupportKHR(VulkanContext::Get()->GetGraphicsQueueIndex(), Surface, &presentSupport);
-	if (!presentSupport)
-	{
-		std::cout << "ERROR: Graphics Queue doesn't support presentation" << std::endl;
-	}
-	// (TODO: use secondary present queue as fallback)
 }
 
 void VulkanSwapchain::CreateSwapchain()
@@ -44,7 +21,7 @@ void VulkanSwapchain::CreateSwapchain()
 	vk::SurfaceFormatKHR DesiredFormat = ChooseSwapchainFormat();
 	vk::PresentModeKHR PresentMode = ChooseSwapchainPresentMode();
 
-	vk::SurfaceCapabilitiesKHR SurfaceCapabilities = VulkanContext::Get()->GetPhysicalDevice().getSurfaceCapabilitiesKHR(Surface);
+	vk::SurfaceCapabilitiesKHR SurfaceCapabilities = VulkanContext::Get()->GetPhysicalDevice().getSurfaceCapabilitiesKHR(VulkanContext::Get()->GetSurface());
 
 	uint32_t ImageCount = SurfaceCapabilities.minImageCount + 1;
 	if (SurfaceCapabilities.maxImageCount > 0 && ImageCount > SurfaceCapabilities.maxImageCount) 
@@ -53,7 +30,7 @@ void VulkanSwapchain::CreateSwapchain()
 	}
 
 	vk::SwapchainCreateInfoKHR CreateInfo;
-	CreateInfo.surface = Surface;
+	CreateInfo.surface = VulkanContext::Get()->GetSurface();
 	CreateInfo.minImageCount = ImageCount;
 	CreateInfo.imageFormat = DesiredFormat.format;
 	SwapchainImageFormat = CreateInfo.imageFormat; //Store for later
@@ -65,7 +42,7 @@ void VulkanSwapchain::CreateSwapchain()
 	CreateInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
 
 	//TODO: Allow Separate Graphics and Presentation Queues
-	uint32_t GraphicsQueueIndex = VulkanContext::Get()->GetGraphicsQueueIndex();
+	uint32_t GraphicsQueueIndex = VulkanContext::Get()->GetPresentQueueIndex();
 	CreateInfo.imageSharingMode = vk::SharingMode::eExclusive;
 
 	CreateInfo.preTransform = SurfaceCapabilities.currentTransform;
@@ -81,7 +58,7 @@ void VulkanSwapchain::CreateSwapchain()
 
 vk::SurfaceFormatKHR VulkanSwapchain::ChooseSwapchainFormat()
 {
-	std::vector<vk::SurfaceFormatKHR> SurfaceFormats = VulkanContext::Get()->GetPhysicalDevice().getSurfaceFormatsKHR(Surface);
+	std::vector<vk::SurfaceFormatKHR> SurfaceFormats = VulkanContext::Get()->GetPhysicalDevice().getSurfaceFormatsKHR(VulkanContext::Get()->GetSurface());
 	vk::SurfaceFormatKHR DesiredFormat;
 
 	//Try to find our desired format
@@ -114,7 +91,7 @@ vk::SurfaceFormatKHR VulkanSwapchain::ChooseSwapchainFormat()
 
 vk::PresentModeKHR VulkanSwapchain::ChooseSwapchainPresentMode()
 {
-	std::vector<vk::PresentModeKHR> SurfacePresentModes = VulkanContext::Get()->GetPhysicalDevice().getSurfacePresentModesKHR(Surface);
+	std::vector<vk::PresentModeKHR> SurfacePresentModes = VulkanContext::Get()->GetPhysicalDevice().getSurfacePresentModesKHR(VulkanContext::Get()->GetSurface());
 
 	vk::PresentModeKHR bestMode;
 

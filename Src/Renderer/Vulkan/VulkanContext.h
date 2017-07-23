@@ -12,7 +12,7 @@ class VulkanContext
 public:
     ~VulkanContext();
 
-    virtual void Startup();
+    virtual void Startup(struct GLFWwindow* window);
 
     virtual void Shutdown();
 
@@ -28,15 +28,21 @@ public: //Helper Functions
     void RemoveDebugCallback();
 
     //Physical and Logical device creation
-    void CreateDeviceAndQueue();
+    void CreateDeviceAndQueues();
 	const vk::PhysicalDevice GetPhysicalDevice() {return PhysicalDevice;}
 	const vk::Device GetDevice() {return Device;}
-	const vk::Queue GetQueue() {return GraphicsQueue;}
+	const vk::Queue GetGraphicsQueue() {return GraphicsQueue;}
+	const vk::Queue GetPresentQueue()  {return PresentQueue; }
 	const int GetGraphicsQueueIndex() {return GraphicsQueueIndex;}
+	const int GetPresentQueueIndex()  {return PresentQueueIndex; }
 
 	//Creates a command pool from which to create command buffers
 	void CreateCommandPool();
 	vk::CommandPool GetCommandPool() {return CommandPool;}
+
+	//Platform-Specific Surface Creation
+    void CreateGLFWSurface(struct GLFWwindow* window);
+	vk::SurfaceKHR GetSurface() {return Surface;}
     
 protected:
 
@@ -50,7 +56,12 @@ protected:
     vk::Queue GraphicsQueue;
 	int GraphicsQueueIndex = -1;
 
+	vk::Queue PresentQueue;
+	int PresentQueueIndex = -1;
+
 	vk::CommandPool CommandPool;
+
+	vk::SurfaceKHR Surface;
 
 public:
 
