@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+#include <vector>
 
 class VulkanSwapchain
 {
@@ -24,4 +25,9 @@ protected:
 
 	vk::SurfaceKHR Surface;
 	vk::SwapchainKHR Swapchain;
+
+	vk::Extent2D SwapchainExtent;
+	std::vector<vk::Image> SwapchainImages;
+	vk::Format SwapchainImageFormat;
+
 };

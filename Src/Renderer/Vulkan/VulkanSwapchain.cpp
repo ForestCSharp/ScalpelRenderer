@@ -56,8 +56,11 @@ void VulkanSwapchain::CreateSwapchain()
 	CreateInfo.surface = Surface;
 	CreateInfo.minImageCount = ImageCount;
 	CreateInfo.imageFormat = DesiredFormat.format;
+	SwapchainImageFormat = CreateInfo.imageFormat; //Store for later
 	CreateInfo.imageColorSpace = DesiredFormat.colorSpace;
 	CreateInfo.imageExtent = SurfaceCapabilities.currentExtent;
+	SwapchainExtent = CreateInfo.imageExtent; //Store for later
+
 	CreateInfo.imageArrayLayers = 1;
 	CreateInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
 
@@ -71,6 +74,8 @@ void VulkanSwapchain::CreateSwapchain()
 
 	Swapchain = VulkanContext::Get()->GetDevice().createSwapchainKHR(CreateInfo);
 	
+	SwapchainImages = VulkanContext::Get()->GetDevice().getSwapchainImagesKHR(Swapchain);
+
 	std::cout << "Swapchain Successfully created" << std::endl;
 }
 
