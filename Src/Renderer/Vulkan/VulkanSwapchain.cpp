@@ -13,7 +13,7 @@ VulkanSwapchain::VulkanSwapchain()
 
 void VulkanSwapchain::Destroy()
 {
-	std::cout << "--- DESTROY SURFACE AND SWAPCHAIN ---" << std::endl;
+	std::cout << "--- DESTROY SWAPCHAIN ---" << std::endl;
 	
 	for (auto& ImageView : SwapchainImageViews)
 	{

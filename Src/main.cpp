@@ -8,6 +8,7 @@
 #include "Renderer/Vulkan/VulkanContext.h"
 #include "Renderer/Vulkan/VulkanCommandBuffer.h"
 #include "Renderer/Vulkan/VulkanSwapchain.h"
+#include "Renderer/Vulkan/VulkanGraphicsPipeline.h"
 
 #include <GLFW\glfw3.h>
 
