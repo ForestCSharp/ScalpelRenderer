@@ -1,28 +1,24 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+#include <string>
 
 class VulkanGraphicsPipeline
 {
 public:
 
 	VulkanGraphicsPipeline();
+	~VulkanGraphicsPipeline();
 	
-	void BuildPipeline();
+	void BuildPipeline(class VulkanRenderPass& RenderPass);
 
 protected: //Internal Pipeline Member variable
 
-	vk::Pipeline GraphicsPipeline;
-	vk::GraphicsPipelineCreateInfo CreateInfo;
+	vk::UniquePipeline GraphicsPipeline;
 
 public: //Shader Stage Functions
 
-
-
-protected: //Shader Stages
-
-	vk::ShaderModule VertexShaderModule;
-	vk::ShaderModule FragmentShaderModule;
+	vk::ShaderModule LoadShaderFromFile(const std::string& filename);
 
 public://Fixed Function Pipeline State
 
@@ -48,5 +44,6 @@ public://Fixed Function Pipeline State
 	vk::PipelineDynamicStateCreateInfo DynamicState;
 	std::vector<vk::DynamicState> DynamicStates;
 
-	vk::PipelineLayout PipelineLayout;
+	vk::PipelineLayoutCreateInfo PipelineLayoutCreateInfo;
+	vk::UniquePipelineLayout PipelineLayout;
 };

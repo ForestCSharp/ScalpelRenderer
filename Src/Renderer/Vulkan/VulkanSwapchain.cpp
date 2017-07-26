@@ -11,18 +11,6 @@ VulkanSwapchain::VulkanSwapchain()
 	CreateImageViews();
 }
 
-void VulkanSwapchain::Destroy()
-{
-	std::cout << "--- DESTROY SWAPCHAIN ---" << std::endl;
-	
-	for (auto& ImageView : SwapchainImageViews)
-	{
-		VulkanContext::Get()->GetDevice().destroyImageView(ImageView);
-	}
-
-	VulkanContext::Get()->GetDevice().destroySwapchainKHR(Swapchain);
-}
-
 void VulkanSwapchain::CreateSwapchain()
 {
 	vk::SurfaceFormatKHR DesiredFormat = ChooseSwapchainFormat();
@@ -56,8 +44,8 @@ void VulkanSwapchain::CreateSwapchain()
 	CreateInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
 	CreateInfo.presentMode = PresentMode;
 
-	Swapchain = VulkanContext::Get()->GetDevice().createSwapchainKHR(CreateInfo);
-	SwapchainImages = VulkanContext::Get()->GetDevice().getSwapchainImagesKHR(Swapchain);
+	Swapchain = VulkanContext::Get()->GetDevice().createSwapchainKHRUnique(CreateInfo);
+	SwapchainImages = VulkanContext::Get()->GetDevice().getSwapchainImagesKHR(Swapchain.get());
 
 	std::cout << "Swapchain Successfully created" << std::endl;
 }
@@ -142,6 +130,6 @@ void VulkanSwapchain::CreateImageViews()
 		CreateInfo.subresourceRange.baseArrayLayer = 0;
 		CreateInfo.subresourceRange.layerCount = 1;
 
-		SwapchainImageViews.push_back(VulkanContext::Get()->GetDevice().createImageView(CreateInfo));
+		SwapchainImageViews.push_back(VulkanContext::Get()->GetDevice().createImageViewUnique(CreateInfo));
 	}
 }
