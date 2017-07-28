@@ -43,5 +43,38 @@ void VulkanRenderPass::BuildRenderPass(VulkanSwapchain& Swapchain)
 	CreateInfo.subpassCount = 1;
 	CreateInfo.pSubpasses = &Subpass;
 
+	//Subpass Dependency
+	vk::SubpassDependency Dependency;
+	Dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	Dependency.dstSubpass = 0;
+	Dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	//Dependency.srcAccessMask = 0;
+	Dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	Dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
+	
+	CreateInfo.dependencyCount = 1;
+	CreateInfo.pDependencies = &Dependency;
+
 	RenderPass = VulkanContext::Get()->GetDevice().createRenderPassUnique(CreateInfo);
+
+	//Framebuffer Creation
+	Framebuffers.clear();
+
+	std::vector<vk::UniqueImageView>& ImageViews = Swapchain.GetImageViews();
+
+	for (auto& UniqueImageView : ImageViews)
+	{
+		vk::ImageView attachments[] = {UniqueImageView.get()};
+
+		vk::FramebufferCreateInfo FramebufferCreateInfo;
+		FramebufferCreateInfo.renderPass = GetRenderPass();
+		FramebufferCreateInfo.attachmentCount = 1;
+		FramebufferCreateInfo.pAttachments = attachments;
+		FramebufferCreateInfo.width = Swapchain.GetExtent().width;
+		FramebufferCreateInfo.height = Swapchain.GetExtent().height;
+		FramebufferCreateInfo.layers = 1;
+
+		Framebuffers.push_back(VulkanContext::Get()->GetDevice().createFramebufferUnique(FramebufferCreateInfo));
+	}
+	//End Framebuffer Creation	
 }

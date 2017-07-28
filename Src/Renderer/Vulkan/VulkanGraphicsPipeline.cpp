@@ -55,9 +55,10 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass)
 	CreateInfo.pDepthStencilState = &DepthStencil;
 	CreateInfo.pColorBlendState = &ColorBlending;
 
+	//Add Dynamic State if array is nonempty
 	DynamicState.dynamicStateCount = (uint32_t) DynamicStates.size();
 	DynamicState.pDynamicStates = DynamicStates.data();
-	CreateInfo.pDynamicState = &DynamicState;
+	CreateInfo.pDynamicState = (DynamicStates.size() > 0) ? &DynamicState : nullptr;
 
 	//Pipeline Layout
 	PipelineLayout = VulkanContext::Get()->GetDevice().createPipelineLayoutUnique(PipelineLayoutCreateInfo);

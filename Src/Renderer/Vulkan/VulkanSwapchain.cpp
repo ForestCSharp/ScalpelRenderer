@@ -35,10 +35,18 @@ void VulkanSwapchain::CreateSwapchain()
 
 	CreateInfo.imageArrayLayers = 1;
 	CreateInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
-
-	//TODO: Allow Separate Graphics and Presentation Queues
-	uint32_t GraphicsQueueIndex = VulkanContext::Get()->GetPresentQueueIndex();
-	CreateInfo.imageSharingMode = vk::SharingMode::eExclusive;
+	
+	uint32_t queueFamilyIndices[] = {(uint32_t)VulkanContext::Get()->GetGraphicsQueueIndex(), (uint32_t)VulkanContext::Get()->GetPresentQueueIndex()};
+	if (VulkanContext::Get()->GetGraphicsQueueIndex() != VulkanContext::Get()->GetPresentQueueIndex())
+	{
+		CreateInfo.imageSharingMode = vk::SharingMode::eConcurrent;
+		CreateInfo.queueFamilyIndexCount = 2;
+		CreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+	}
+	else
+	{
+		CreateInfo.imageSharingMode = vk::SharingMode::eExclusive;
+	}
 
 	CreateInfo.preTransform = SurfaceCapabilities.currentTransform;
 	CreateInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
@@ -47,7 +55,7 @@ void VulkanSwapchain::CreateSwapchain()
 	Swapchain = VulkanContext::Get()->GetDevice().createSwapchainKHRUnique(CreateInfo);
 	SwapchainImages = VulkanContext::Get()->GetDevice().getSwapchainImagesKHR(Swapchain.get());
 
-	std::cout << "Swapchain Successfully created" << std::endl;
+	std::cout << SwapchainImages.size() << std::endl;
 }
 
 vk::SurfaceFormatKHR VulkanSwapchain::ChooseSwapchainFormat()
@@ -67,9 +75,9 @@ vk::SurfaceFormatKHR VulkanSwapchain::ChooseSwapchainFormat()
 	
 	if (SurfaceFormats.size() == 1)
 	{
-		//Free to choose our own format and color space
 		if (SurfaceFormats[0].format == vk::Format::eUndefined)
 		{
+			//Free to choose our own format and color space
 			DesiredFormat.format = vk::Format::eB8G8R8A8Unorm;
 			DesiredFormat.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
 			return DesiredFormat;

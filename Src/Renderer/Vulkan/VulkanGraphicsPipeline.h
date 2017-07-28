@@ -11,6 +11,7 @@ public:
 	~VulkanGraphicsPipeline();
 	
 	void BuildPipeline(class VulkanRenderPass& RenderPass);
+	vk::Pipeline GetHandle() { return GraphicsPipeline.get(); }
 
 protected: //Internal Pipeline Member variable
 

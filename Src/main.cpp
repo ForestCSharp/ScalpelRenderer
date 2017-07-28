@@ -86,35 +86,74 @@ int main(int, char**)
 		Pipeline.ColorBlending.attachmentCount = 1;
 		Pipeline.ColorBlending.pAttachments = &Pipeline.ColorBlendAttachment;
 
-		Pipeline.DynamicStates.push_back(vk::DynamicState::eViewport);
-		Pipeline.DynamicStates.push_back(vk::DynamicState::eLineWidth);
+		//Pipeline.DynamicStates.push_back(vk::DynamicState::eViewport);
 
 		/* ... End Pipeline Setup ... */
 		Pipeline.BuildPipeline(RenderPass);
 
-		VulkanCommandBuffer CmdBuffer;
-		CmdBuffer.Begin();
-		/* ... Rendering Commands Here ... */
-		CmdBuffer.End();
+		std::vector<VulkanCommandBuffer> CommandBuffers;
+		CommandBuffers.resize(RenderPass.GetFramebuffers().size());
+		for (size_t i = 0; i < CommandBuffers.size(); ++i)
+		{
+			auto& CmdBuffer = CommandBuffers[i];
+			CmdBuffer.Begin();
+			/* ... Rendering Commands Here ... */
+			vk::RenderPassBeginInfo BeginInfo;
+			BeginInfo.renderPass = RenderPass.GetRenderPass();
+			BeginInfo.framebuffer = RenderPass.GetFramebuffers()[i].get();
+			BeginInfo.renderArea.offset = {0,0};
+			BeginInfo.renderArea.extent = Swapchain.GetExtent();
+			vk::ClearColorValue ClearColor(std::array<float, 4>{1.0f, 0.0f, 0.0f, 1.0f});
+			vk::ClearValue ClearValue(ClearColor);
+			BeginInfo.clearValueCount = 1;
+			BeginInfo.pClearValues = &ClearValue;
+			CmdBuffer().beginRenderPass(BeginInfo, vk::SubpassContents::eInline);
+			CmdBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, Pipeline.GetHandle());
+			CmdBuffer().draw(3,1,0,0);
+			CmdBuffer().endRenderPass();
+			CmdBuffer.End();
+		}
 
-
-		glClearColor(0, 0, 100, 1);
+		vk::UniqueSemaphore ImageAvailableSemaphore = VulkanContext::Get()->GetDevice().createSemaphoreUnique(vk::SemaphoreCreateInfo());
+		vk::UniqueSemaphore RenderFinishedSemaphore = VulkanContext::Get()->GetDevice().createSemaphoreUnique(vk::SemaphoreCreateInfo());
 
 		// Main loop
 		while (!glfwWindowShouldClose(window))
 		{
 			glfwPollEvents();
 
-			//TODO: remove OpenGL Stuff
-			int display_w, display_h;
-			glfwGetFramebufferSize(window, &display_w, &display_h);
-			glViewport(0, 0, display_w, display_h);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			uint32_t ImageIndex = VulkanContext::Get()->GetDevice().acquireNextImageKHR(Swapchain.GetHandle(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphore.get(), vk::Fence()).value;
+			
+			vk::SubmitInfo SubmitInfo;
+			vk::Semaphore WaitSemaphores[] = {ImageAvailableSemaphore.get()};
+			const vk::PipelineStageFlags WaitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+			SubmitInfo.waitSemaphoreCount = 1;
+			SubmitInfo.pWaitSemaphores = WaitSemaphores;
+			SubmitInfo.pWaitDstStageMask = WaitStages;
+			SubmitInfo.commandBufferCount = 1;
+			SubmitInfo.pCommandBuffers = &CommandBuffers[ImageIndex].Get();
+			vk::Semaphore SignalSemaphores[] = {RenderFinishedSemaphore.get()};
+			SubmitInfo.signalSemaphoreCount = 1;
+			SubmitInfo.pSignalSemaphores = SignalSemaphores;
 
-			glfwSwapBuffers(window);
+			VulkanContext::Get()->GetGraphicsQueue().submit(1, &SubmitInfo, vk::Fence());
+
+			vk::PresentInfoKHR PresentInfo;
+			PresentInfo.waitSemaphoreCount = 1;
+			PresentInfo.pWaitSemaphores = SignalSemaphores;
+			vk::SwapchainKHR SwapChains[] = {Swapchain.GetHandle()};
+			PresentInfo.swapchainCount = 1;
+			PresentInfo.pSwapchains = SwapChains;
+			PresentInfo.pImageIndices = &ImageIndex;
+
+			VulkanContext::Get()->GetPresentQueue().presentKHR(PresentInfo);
+		
+			VulkanContext::Get()->GetPresentQueue().waitIdle();
 		}
+		
+		VulkanContext::Get()->GetDevice().waitIdle();
 	}
-
+	
 	VulkanContext::Get()->Shutdown();
 
 	// Cleanup

@@ -15,6 +15,7 @@ VulkanCommandBuffer::VulkanCommandBuffer()
 void VulkanCommandBuffer::Begin()
 {
 	vk::CommandBufferBeginInfo BeginInfo;
+	BeginInfo.flags = vk::CommandBufferUsageFlagBits::eSimultaneousUse;
 	CommandBuffer.begin(BeginInfo);
 }
 

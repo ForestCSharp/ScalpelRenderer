@@ -11,9 +11,10 @@ public:
 
 	void CreateSwapchain();
 	void CreateImageViews();
-	vk::SwapchainKHR GetSwapchain() { return Swapchain.get(); }
+	vk::SwapchainKHR GetHandle() { return Swapchain.get(); }
 	vk::Format GetFormat() { return SwapchainImageFormat; }
 	vk::Extent2D GetExtent() { return SwapchainExtent; }
+	std::vector<vk::UniqueImageView>& GetImageViews() {return SwapchainImageViews;}
 
 	vk::SurfaceFormatKHR ChooseSwapchainFormat();
 	vk::PresentModeKHR ChooseSwapchainPresentMode();
