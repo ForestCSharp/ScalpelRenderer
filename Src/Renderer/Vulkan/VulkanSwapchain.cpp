@@ -54,8 +54,6 @@ void VulkanSwapchain::CreateSwapchain()
 
 	Swapchain = VulkanContext::Get()->GetDevice().createSwapchainKHRUnique(CreateInfo);
 	SwapchainImages = VulkanContext::Get()->GetDevice().getSwapchainImagesKHR(Swapchain.get());
-
-	std::cout << SwapchainImages.size() << std::endl;
 }
 
 vk::SurfaceFormatKHR VulkanSwapchain::ChooseSwapchainFormat()
@@ -140,4 +138,6 @@ void VulkanSwapchain::CreateImageViews()
 
 		SwapchainImageViews.push_back(VulkanContext::Get()->GetDevice().createImageViewUnique(CreateInfo));
 	}
+
+	std::cout << "Image View Count " << SwapchainImageViews.size() << std::endl;
 }

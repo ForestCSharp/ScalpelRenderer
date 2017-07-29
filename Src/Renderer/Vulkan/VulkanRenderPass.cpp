@@ -19,12 +19,12 @@ void VulkanRenderPass::BuildRenderPass(VulkanSwapchain& Swapchain)
 	ColorAttachment.format = Swapchain.GetFormat();
 	ColorAttachment.samples = vk::SampleCountFlagBits::e1;
 	ColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-	ColorAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+	ColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
 	ColorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
 	ColorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
 	ColorAttachment.initialLayout = vk::ImageLayout::eUndefined;
 	ColorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
-
+	
 	//Color attachment Reference for our subpass
 	vk::AttachmentReference ColorAttachmentRef;
 	ColorAttachmentRef.attachment = 0;
@@ -76,5 +76,5 @@ void VulkanRenderPass::BuildRenderPass(VulkanSwapchain& Swapchain)
 
 		Framebuffers.push_back(VulkanContext::Get()->GetDevice().createFramebufferUnique(FramebufferCreateInfo));
 	}
-	//End Framebuffer Creation	
+	//End Framebuffer Creation
 }
