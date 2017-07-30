@@ -103,11 +103,15 @@ vk::ShaderModule VulkanGraphicsPipeline::LoadShaderFromFile(const std::string& f
 	return VulkanContext::Get()->GetDevice().createShaderModule(CreateInfo);
 }
 
-void VulkanGraphicsPipeline::SetVertexInputBindings(std::vector<vk::VertexInputBindingDescription> InputBindings, std::vector<vk::VertexInputAttributeDescription> AttributeBindings)
+void VulkanGraphicsPipeline::SetVertexInputBindings(std::vector<vk::VertexInputBindingDescription>& InputBindings, std::vector<vk::VertexInputAttributeDescription>& AttributeBindings)
 {
-	VertexInput.vertexBindingDescriptionCount = static_cast<uint32_t>(InputBindings.size());
-	VertexInput.pVertexBindingDescriptions = InputBindings.data();
+	//Store this information so our pointers are guaranteed valid below
+	VertexInputBindings = InputBindings;
+	VertexAttributeBindings = AttributeBindings;
 
-	VertexInput.vertexAttributeDescriptionCount = static_cast<uint32_t>(AttributeBindings.size());
-	VertexInput.pVertexAttributeDescriptions = AttributeBindings.data();
+	VertexInput.vertexBindingDescriptionCount = static_cast<uint32_t>(VertexInputBindings.size());
+	VertexInput.pVertexBindingDescriptions = VertexInputBindings.data();
+
+	VertexInput.vertexAttributeDescriptionCount = static_cast<uint32_t>(VertexAttributeBindings.size());
+	VertexInput.pVertexAttributeDescriptions = VertexAttributeBindings.data();
 }

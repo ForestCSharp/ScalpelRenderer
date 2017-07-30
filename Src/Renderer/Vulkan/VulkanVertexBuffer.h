@@ -48,10 +48,17 @@ const std::vector<Vertex> vertices =
 
 class VulkanVertexBuffer
 {
+public:
+
 	VulkanVertexBuffer();
 	const vk::Buffer GetHandle() { return Buffer.get(); }
 
 protected:
 
+	uint32_t FindMemoryType(uint32_t TypeFilter, vk::MemoryPropertyFlags Properties);
+
+protected:
+
 	vk::UniqueBuffer Buffer;
+	vk::UniqueDeviceMemory Memory;
 };

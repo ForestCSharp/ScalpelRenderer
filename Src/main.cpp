@@ -42,6 +42,8 @@ int main(int, char**)
 		VulkanRenderPass RenderPass;
 		RenderPass.BuildRenderPass(Swapchain);
 
+		VulkanVertexBuffer VertexBuffer;
+
 		VulkanGraphicsPipeline Pipeline;
 		/* ... Pipeline Setup Here ... */
 		Pipeline.SetVertexInputBindings(Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions());
@@ -111,7 +113,14 @@ int main(int, char**)
 			BeginInfo.pClearValues = &ClearValue;
 			CmdBuffer().beginRenderPass(BeginInfo, vk::SubpassContents::eInline);
 			CmdBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, Pipeline.GetHandle());
-			CmdBuffer().draw(3,1,0,0);
+			
+			//Vertex Buffer Binding
+			vk::Buffer VertexBuffers[] = {VertexBuffer.GetHandle()};
+			vk::DeviceSize Offsets[] = {0};
+			CmdBuffer().bindVertexBuffers(0, 1, VertexBuffers, Offsets);
+			CmdBuffer().draw(static_cast<uint32_t>(vertices.size()),1,0,0);
+			//End Vertex Buffer Binding
+
 			CmdBuffer().endRenderPass();
 			CmdBuffer.End();
 		}

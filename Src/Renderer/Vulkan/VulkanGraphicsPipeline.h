@@ -25,7 +25,10 @@ public: //Shader Stage Functions
 public://Fixed Function Pipeline State
 
 	vk::PipelineVertexInputStateCreateInfo VertexInput;
-	void SetVertexInputBindings(std::vector<vk::VertexInputBindingDescription> InputBindings, std::vector<vk::VertexInputAttributeDescription> AttributeBindings);
+	
+	void SetVertexInputBindings(std::vector<vk::VertexInputBindingDescription>& InputBindings, std::vector<vk::VertexInputAttributeDescription>& AttributeBindings);
+	std::vector<vk::VertexInputBindingDescription> VertexInputBindings;
+	std::vector<vk::VertexInputAttributeDescription> VertexAttributeBindings;
 
 	vk::PipelineInputAssemblyStateCreateInfo InputAssembly;
 
