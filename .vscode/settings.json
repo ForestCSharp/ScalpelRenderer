@@ -59,7 +59,9 @@
 		"events.c": "cpp",
 		"threads.c": "cpp",
 		"set": "cpp",
-		"xtree": "cpp"
+		"xtree": "cpp",
+		"particles.c": "cpp",
+		"wave.c": "cpp"
 	},
     "python.linting.pylintEnabled": false
 }

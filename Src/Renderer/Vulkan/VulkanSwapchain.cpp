@@ -138,6 +138,4 @@ void VulkanSwapchain::CreateImageViews()
 
 		SwapchainImageViews.push_back(VulkanContext::Get()->GetDevice().createImageViewUnique(CreateInfo));
 	}
-
-	std::cout << "Image View Count " << SwapchainImageViews.size() << std::endl;
 }

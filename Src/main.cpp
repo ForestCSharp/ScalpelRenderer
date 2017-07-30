@@ -10,6 +10,7 @@
 #include "Renderer/Vulkan/VulkanSwapchain.h"
 #include "Renderer/Vulkan/VulkanGraphicsPipeline.h"
 #include "Renderer/Vulkan/VulkanRenderPass.h"
+#include "Renderer/Vulkan/VulkanVertexBuffer.h"
 
 #include <GLFW\glfw3.h>
 
@@ -43,9 +44,7 @@ int main(int, char**)
 
 		VulkanGraphicsPipeline Pipeline;
 		/* ... Pipeline Setup Here ... */
-
-		Pipeline.VertexInput.vertexBindingDescriptionCount = 0;
-		Pipeline.VertexInput.vertexAttributeDescriptionCount = 0;
+		Pipeline.SetVertexInputBindings(Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions());
 		
 		Pipeline.InputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
 		Pipeline.InputAssembly.primitiveRestartEnable = VK_FALSE;

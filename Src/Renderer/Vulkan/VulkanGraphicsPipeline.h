@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.hpp>
 #include <string>
+#include <vector>
 
 class VulkanGraphicsPipeline
 {
@@ -24,6 +25,7 @@ public: //Shader Stage Functions
 public://Fixed Function Pipeline State
 
 	vk::PipelineVertexInputStateCreateInfo VertexInput;
+	void SetVertexInputBindings(std::vector<vk::VertexInputBindingDescription> InputBindings, std::vector<vk::VertexInputAttributeDescription> AttributeBindings);
 
 	vk::PipelineInputAssemblyStateCreateInfo InputAssembly;
 

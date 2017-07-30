@@ -309,6 +309,5 @@ void VulkanContext::CreateGLFWSurface(GLFWwindow* window)
         throw std::runtime_error("failed to create window surface!");
     }
 
-    std::cout << "GLFW Surface Successfully Created" << std::endl;
     Surface = tmp;
 }

@@ -102,3 +102,12 @@ vk::ShaderModule VulkanGraphicsPipeline::LoadShaderFromFile(const std::string& f
 
 	return VulkanContext::Get()->GetDevice().createShaderModule(CreateInfo);
 }
+
+void VulkanGraphicsPipeline::SetVertexInputBindings(std::vector<vk::VertexInputBindingDescription> InputBindings, std::vector<vk::VertexInputAttributeDescription> AttributeBindings)
+{
+	VertexInput.vertexBindingDescriptionCount = static_cast<uint32_t>(InputBindings.size());
+	VertexInput.pVertexBindingDescriptions = InputBindings.data();
+
+	VertexInput.vertexAttributeDescriptionCount = static_cast<uint32_t>(AttributeBindings.size());
+	VertexInput.pVertexAttributeDescriptions = AttributeBindings.data();
+}

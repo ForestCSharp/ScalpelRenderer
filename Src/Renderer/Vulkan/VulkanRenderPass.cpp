@@ -18,10 +18,13 @@ void VulkanRenderPass::BuildRenderPass(VulkanSwapchain& Swapchain)
 	
 	ColorAttachment.format = Swapchain.GetFormat();
 	ColorAttachment.samples = vk::SampleCountFlagBits::e1;
+	
 	ColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 	ColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+
 	ColorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
 	ColorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+
 	ColorAttachment.initialLayout = vk::ImageLayout::eUndefined;
 	ColorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
 	
