@@ -90,6 +90,13 @@ int main(int, char**)
 		Pipeline.PipelineLayoutCreateInfo.setLayoutCount = 0;
 		Pipeline.PipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 
+		Pipeline.DepthStencil.depthTestEnable = VK_TRUE;
+		Pipeline.DepthStencil.depthWriteEnable = VK_TRUE;
+		Pipeline.DepthStencil.depthCompareOp = vk::CompareOp::eLess;
+		Pipeline.DepthStencil.minDepthBounds = 0.0f;
+		Pipeline.DepthStencil.maxDepthBounds = 1.0f;
+		Pipeline.DepthStencil.stencilTestEnable = VK_FALSE;
+
 		//Pipeline.DynamicStates.push_back(vk::DynamicState::eViewport);
 
 		/* ... End Pipeline Setup ... */
@@ -107,10 +114,13 @@ int main(int, char**)
 			BeginInfo.framebuffer = RenderPass.GetFramebuffers()[i].get();
 			BeginInfo.renderArea.offset = {0,0};
 			BeginInfo.renderArea.extent = Swapchain.GetExtent();
+			
 			vk::ClearColorValue ClearColor(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
-			vk::ClearValue ClearValue(ClearColor);
-			BeginInfo.clearValueCount = 1;
-			BeginInfo.pClearValues = &ClearValue;
+			vk::ClearDepthStencilValue ClearDepth(1.0f, 0);
+			std::vector<vk::ClearValue> ClearValues = {ClearColor, ClearDepth};
+			
+			BeginInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
+			BeginInfo.pClearValues = ClearValues.data();
 			CmdBuffer().beginRenderPass(BeginInfo, vk::SubpassContents::eInline);
 			CmdBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, Pipeline.GetHandle());
 			

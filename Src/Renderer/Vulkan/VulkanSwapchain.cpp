@@ -192,6 +192,4 @@ void VulkanSwapchain::CreateDepthBuffer()
 	ViewInfo.viewType = vk::ImageViewType::e2D;
 
 	DepthBufferView = Device.createImageViewUnique(ViewInfo);
-
-	//TODO: Transition Depth Stencil Layout
 }
