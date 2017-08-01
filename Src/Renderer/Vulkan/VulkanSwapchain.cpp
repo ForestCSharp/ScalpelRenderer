@@ -9,6 +9,7 @@ VulkanSwapchain::VulkanSwapchain()
 {
 	CreateSwapchain();
 	CreateImageViews();
+	CreateDepthBuffer();
 }
 
 void VulkanSwapchain::CreateSwapchain()
@@ -138,4 +139,59 @@ void VulkanSwapchain::CreateImageViews()
 
 		SwapchainImageViews.push_back(VulkanContext::Get()->GetDevice().createImageViewUnique(CreateInfo));
 	}
+}
+
+void VulkanSwapchain::CreateDepthBuffer()
+{
+	vk::Device Device = VulkanContext::Get()->GetDevice();
+
+	DepthFormat = VulkanContext::Get()->FindSupportedFormat(
+        {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
+         vk::ImageTiling::eOptimal,
+         vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+	
+	bool HasStencil = (DepthFormat == vk::Format::eD32SfloatS8Uint) || (DepthFormat == vk::Format::eD24UnormS8Uint);
+
+	vk::ImageCreateInfo ImageInfo;
+	ImageInfo.imageType = vk::ImageType::e2D;
+	ImageInfo.format = DepthFormat;
+	ImageInfo.extent.width = SwapchainExtent.width;
+	ImageInfo.extent.height = SwapchainExtent.height;
+	ImageInfo.extent.depth = 1;
+	ImageInfo.mipLevels = 1;
+	ImageInfo.arrayLayers = 1;
+	ImageInfo.samples = vk::SampleCountFlagBits::e1;
+	ImageInfo.initialLayout = vk::ImageLayout::eUndefined;
+	ImageInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+	ImageInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	DepthBuffer = Device.createImageUnique(ImageInfo);
+
+	vk::MemoryRequirements MemReqs = Device.getImageMemoryRequirements(DepthBuffer.get());
+
+	vk::MemoryAllocateInfo AllocInfo;
+	AllocInfo.allocationSize = MemReqs.size;
+	AllocInfo.memoryTypeIndex = VulkanContext::FindMemoryType(MemReqs.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+	DepthBufferMemory = Device.allocateMemoryUnique(AllocInfo);
+
+	Device.bindImageMemory(DepthBuffer.get(), DepthBufferMemory.get(), 0);
+
+	vk::ImageViewCreateInfo ViewInfo;
+	ViewInfo.image = DepthBuffer.get();
+	ViewInfo.format = DepthFormat;
+	ViewInfo.subresourceRange.levelCount = 1;
+	ViewInfo.subresourceRange.layerCount = 1;
+	ViewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+	
+	if (HasStencil)
+	{
+		ViewInfo.subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
+	}
+
+	ViewInfo.viewType = vk::ImageViewType::e2D;
+
+	DepthBufferView = Device.createImageViewUnique(ViewInfo);
+
+	//TODO: Transition Depth Stencil Layout
 }

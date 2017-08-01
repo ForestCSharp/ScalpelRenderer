@@ -11,6 +11,7 @@ public:
 
 	void CreateSwapchain();
 	void CreateImageViews();
+	void CreateDepthBuffer();
 	vk::SwapchainKHR GetHandle() { return Swapchain.get(); }
 	vk::Format GetFormat() { return SwapchainImageFormat; }
 	vk::Extent2D GetExtent() { return SwapchainExtent; }
@@ -25,6 +26,12 @@ protected:
 
 	vk::Extent2D SwapchainExtent;
 	vk::Format SwapchainImageFormat;
+
 	std::vector<vk::Image> SwapchainImages;
 	std::vector<vk::UniqueImageView> SwapchainImageViews;
+
+	vk::UniqueImage DepthBuffer;
+	vk::UniqueDeviceMemory DepthBufferMemory;
+	vk::UniqueImageView DepthBufferView;
+	vk::Format DepthFormat;
 };

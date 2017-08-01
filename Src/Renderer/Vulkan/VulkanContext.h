@@ -75,6 +75,13 @@ public:
         return SingletonPtr;
     }
 
+	//TODO: This function doesn't really have a good place to live... 
+	//		potentially abstract out Vulkan Memory Allocation?
+	static uint32_t FindMemoryType(uint32_t TypeFilter, vk::MemoryPropertyFlags Properties);
+
+	//Attempts to find a supported image format from candidates with tiling and features
+	vk::Format FindSupportedFormat(const std::vector<vk::Format>& Candidates, vk::ImageTiling Tiling, vk::FormatFeatureFlags Features);
+
 private:
 
 	static VulkanContext* SingletonPtr;

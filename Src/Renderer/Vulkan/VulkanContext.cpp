@@ -311,3 +311,36 @@ void VulkanContext::CreateGLFWSurface(GLFWwindow* window)
 
     Surface = tmp;
 }
+
+uint32_t VulkanContext::FindMemoryType(uint32_t TypeFilter, vk::MemoryPropertyFlags Properties)
+{
+	vk::PhysicalDeviceMemoryProperties MemoryProperties = VulkanContext::Get()->GetPhysicalDevice().getMemoryProperties();
+	for (uint32_t i = 0; i < MemoryProperties.memoryTypeCount; i++) 
+	{
+		if ((TypeFilter & (1 << i)) && (MemoryProperties.memoryTypes[i].propertyFlags & Properties) == Properties) 
+		{
+			return i;
+		}
+	}
+
+	throw std::runtime_error("VertexBuffer: Failed to find suitable memory type");
+}
+
+vk::Format VulkanContext::FindSupportedFormat(const std::vector<vk::Format>& Candidates, vk::ImageTiling Tiling, vk::FormatFeatureFlags Features)
+{
+	for (vk::Format Format : Candidates) 
+	{
+        vk::FormatProperties Properties = PhysicalDevice.getFormatProperties(Format);
+
+        if (Tiling == vk::ImageTiling::eLinear && (Properties.linearTilingFeatures & Features) == Features) 
+		{
+            return Format;
+        } 
+		else if (Tiling == vk::ImageTiling::eOptimal && (Properties.optimalTilingFeatures & Features) == Features) 
+		{
+            return Format;
+        }
+    }
+
+    throw std::runtime_error("failed to find supported format!");
+}
