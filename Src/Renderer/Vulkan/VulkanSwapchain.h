@@ -7,7 +7,7 @@ class VulkanSwapchain
 {
 public:
 
-	VulkanSwapchain();
+	void BuildSwapchain();
 
 	void CreateSwapchain();
 	void CreateImageViews();

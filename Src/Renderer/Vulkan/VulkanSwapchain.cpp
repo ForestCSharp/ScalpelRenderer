@@ -5,7 +5,7 @@
 #include <vector>
 #include <glfw/glfw3.h>
 
-VulkanSwapchain::VulkanSwapchain()
+void VulkanSwapchain::BuildSwapchain()
 {
 	CreateSwapchain();
 	CreateImageViews();

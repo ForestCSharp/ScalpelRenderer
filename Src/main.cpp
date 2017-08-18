@@ -25,19 +25,21 @@ int main(int, char**)
 	glfwSetErrorCallback(error_callback);
 	if (!glfwInit())
 		return 1;
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint( GLFW_CLIENT_API, GLFW_NO_API );
 	GLFWwindow* window = glfwCreateWindow(1080, 720, "Scalpel", NULL, NULL);
 	glfwMakeContextCurrent(window);
 
 	//TODO: VULKAN RENDERER TESTING
-	VulkanContext* v = VulkanContext::Get();
-	v->Startup(window);
+	VulkanContext* Context = VulkanContext::Get();
+	Context->Startup(window);
 	
 	//Scope block for implicit destruction of unique vulkan objects
 	{
 		VulkanSwapchain Swapchain;
+		Swapchain.BuildSwapchain();
 
 		VulkanRenderPass RenderPass;
 		RenderPass.BuildRenderPass(Swapchain);
@@ -45,6 +47,7 @@ int main(int, char**)
 		VulkanVertexBuffer VertexBuffer;
 
 		VulkanGraphicsPipeline Pipeline;
+
 		/* ... Pipeline Setup Here ... */
 		Pipeline.SetVertexInputBindings(Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions());
 		
@@ -135,15 +138,39 @@ int main(int, char**)
 			CmdBuffer.End();
 		}
 
-		vk::UniqueSemaphore ImageAvailableSemaphore = VulkanContext::Get()->GetDevice().createSemaphoreUnique(vk::SemaphoreCreateInfo());
-		vk::UniqueSemaphore RenderFinishedSemaphore = VulkanContext::Get()->GetDevice().createSemaphoreUnique(vk::SemaphoreCreateInfo());
+		vk::UniqueSemaphore ImageAvailableSemaphore = Context->GetDevice().createSemaphoreUnique(vk::SemaphoreCreateInfo());
+		vk::UniqueSemaphore RenderFinishedSemaphore = Context->GetDevice().createSemaphoreUnique(vk::SemaphoreCreateInfo());
+
+		int Width, Height;
+		glfwGetWindowSize(window, &Width, &Height);
+		int NewWidth, NewHeight;
 
 		// Main loop
 		while (!glfwWindowShouldClose(window))
 		{
+			//Window Resizing Logic
+			glfwGetWindowSize(window, &NewWidth, &NewHeight);
+			if (NewWidth != Width || NewHeight != Height)
+			{
+				Context->GetDevice().waitIdle();
+				std::cout << "Window Resized" << std::endl;
+
+				Swapchain.BuildSwapchain();
+				RenderPass.BuildRenderPass(Swapchain);
+				Pipeline.Viewport.width = (float) Swapchain.GetExtent().width;
+				Pipeline.Viewport.height = (float) Swapchain.GetExtent().height;
+				Pipeline.Scissor.extent = Swapchain.GetExtent();
+				Pipeline.BuildPipeline(RenderPass);
+
+				//TODO: Recreate Command Buffers
+
+				Width = NewWidth;
+				Height = NewHeight;
+			}
+
 			glfwPollEvents();
 
-			uint32_t ImageIndex = VulkanContext::Get()->GetDevice().acquireNextImageKHR(Swapchain.GetHandle(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphore.get(), vk::Fence()).value;
+			uint32_t ImageIndex = Context->GetDevice().acquireNextImageKHR(Swapchain.GetHandle(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphore.get(), vk::Fence()).value;
 
 			vk::SubmitInfo SubmitInfo;
 			vk::Semaphore WaitSemaphores[] = {ImageAvailableSemaphore.get()};
@@ -160,7 +187,7 @@ int main(int, char**)
 			SubmitInfo.signalSemaphoreCount = 1;
 			SubmitInfo.pSignalSemaphores = SignalSemaphores;
 
-			VulkanContext::Get()->GetGraphicsQueue().submit(1, &SubmitInfo, vk::Fence());
+			Context->GetGraphicsQueue().submit(1, &SubmitInfo, vk::Fence());
 
 			vk::PresentInfoKHR PresentInfo;
 			PresentInfo.waitSemaphoreCount = 1;
@@ -172,15 +199,15 @@ int main(int, char**)
 
 			PresentInfo.pImageIndices = &ImageIndex;
 
-			VulkanContext::Get()->GetPresentQueue().presentKHR(PresentInfo);
+			Context->GetPresentQueue().presentKHR(PresentInfo);
 		
-			VulkanContext::Get()->GetPresentQueue().waitIdle();
+			Context->GetPresentQueue().waitIdle();
 		}
 		
-		VulkanContext::Get()->GetDevice().waitIdle();
+		Context->GetDevice().waitIdle();
 	}
 	
-	VulkanContext::Get()->Shutdown();
+	Context->Shutdown();
 
 	// Cleanup
 	glfwTerminate();
