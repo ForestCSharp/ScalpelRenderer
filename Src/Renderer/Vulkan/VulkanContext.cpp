@@ -297,6 +297,7 @@ void VulkanContext::CreateCommandPool()
 {
 	vk::CommandPoolCreateInfo CreateInfo;
 	CreateInfo.queueFamilyIndex = GraphicsQueueIndex;
+    CreateInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 
 	CommandPool = Device.createCommandPool(CreateInfo);
 }

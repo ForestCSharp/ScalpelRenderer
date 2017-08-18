@@ -33,6 +33,7 @@ void VulkanSwapchain::CreateSwapchain()
 	CreateInfo.imageColorSpace = DesiredFormat.colorSpace;
 	CreateInfo.imageExtent = SurfaceCapabilities.currentExtent;
 	SwapchainExtent = CreateInfo.imageExtent; //Store for later
+	CreateInfo.oldSwapchain = Swapchain.get();
 
 	CreateInfo.imageArrayLayers = 1;
 	CreateInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;

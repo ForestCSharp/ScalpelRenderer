@@ -107,36 +107,44 @@ int main(int, char**)
 
 		std::vector<VulkanCommandBuffer> CommandBuffers;
 		CommandBuffers.resize(RenderPass.GetFramebuffers().size());
-		for (size_t i = 0; i < CommandBuffers.size(); ++i)
-		{
-			auto& CmdBuffer = CommandBuffers[i];
-			CmdBuffer.Begin();
-			/* ... Rendering Commands Here ... */
-			vk::RenderPassBeginInfo BeginInfo;
-			BeginInfo.renderPass = RenderPass.GetRenderPass();
-			BeginInfo.framebuffer = RenderPass.GetFramebuffers()[i].get();
-			BeginInfo.renderArea.offset = {0,0};
-			BeginInfo.renderArea.extent = Swapchain.GetExtent();
-			
-			vk::ClearColorValue ClearColor(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
-			vk::ClearDepthStencilValue ClearDepth(1.0f, 0);
-			std::vector<vk::ClearValue> ClearValues = {ClearColor, ClearDepth};
-			
-			BeginInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
-			BeginInfo.pClearValues = ClearValues.data();
-			CmdBuffer().beginRenderPass(BeginInfo, vk::SubpassContents::eInline);
-			CmdBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, Pipeline.GetHandle());
-			
-			//Vertex Buffer Binding
-			vk::Buffer VertexBuffers[] = {VertexBuffer.GetHandle()};
-			vk::DeviceSize Offsets[] = {0};
-			CmdBuffer().bindVertexBuffers(0, 1, VertexBuffers, Offsets);
-			CmdBuffer().draw(static_cast<uint32_t>(vertices.size()),1,0,0);
-			//End Vertex Buffer Binding
 
-			CmdBuffer().endRenderPass();
-			CmdBuffer.End();
-		}
+		//TODO: Eventually these sort of command buffers will be tied to classes of things we need to draw
+		// (i.e. static meshes, skinned meshes, etc.)
+		//Wrapped in lambda for window resize below
+		auto BuildDrawingCommandBuffers = [&]()
+		{
+			for (size_t i = 0; i < CommandBuffers.size(); ++i)
+			{
+				auto& CmdBuffer = CommandBuffers[i];
+				CmdBuffer.Begin();
+				/* ... Rendering Commands Here ... */
+				vk::RenderPassBeginInfo BeginInfo;
+				BeginInfo.renderPass = RenderPass.GetRenderPass();
+				BeginInfo.framebuffer = RenderPass.GetFramebuffers()[i].get();
+				BeginInfo.renderArea.offset = {0,0};
+				BeginInfo.renderArea.extent = Swapchain.GetExtent();
+				
+				vk::ClearColorValue ClearColor(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
+				vk::ClearDepthStencilValue ClearDepth(1.0f, 0);
+				std::vector<vk::ClearValue> ClearValues = {ClearColor, ClearDepth};
+				
+				BeginInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
+				BeginInfo.pClearValues = ClearValues.data();
+				CmdBuffer().beginRenderPass(BeginInfo, vk::SubpassContents::eInline);
+				CmdBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, Pipeline.GetHandle());
+				
+				//Vertex Buffer Binding
+				vk::Buffer VertexBuffers[] = {VertexBuffer.GetHandle()};
+				vk::DeviceSize Offsets[] = {0};
+				CmdBuffer().bindVertexBuffers(0, 1, VertexBuffers, Offsets);
+				CmdBuffer().draw(static_cast<uint32_t>(vertices.size()),1,0,0);
+				//End Vertex Buffer Binding
+
+				CmdBuffer().endRenderPass();
+				CmdBuffer.End();
+			}
+		};
+		BuildDrawingCommandBuffers();
 
 		vk::UniqueSemaphore ImageAvailableSemaphore = Context->GetDevice().createSemaphoreUnique(vk::SemaphoreCreateInfo());
 		vk::UniqueSemaphore RenderFinishedSemaphore = Context->GetDevice().createSemaphoreUnique(vk::SemaphoreCreateInfo());
@@ -156,13 +164,15 @@ int main(int, char**)
 				std::cout << "Window Resized" << std::endl;
 
 				Swapchain.BuildSwapchain();
+				
 				RenderPass.BuildRenderPass(Swapchain);
+
 				Pipeline.Viewport.width = (float) Swapchain.GetExtent().width;
 				Pipeline.Viewport.height = (float) Swapchain.GetExtent().height;
 				Pipeline.Scissor.extent = Swapchain.GetExtent();
 				Pipeline.BuildPipeline(RenderPass);
 
-				//TODO: Recreate Command Buffers
+				BuildDrawingCommandBuffers();
 
 				Width = NewWidth;
 				Height = NewHeight;
