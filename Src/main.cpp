@@ -161,7 +161,6 @@ int main(int, char**)
 			if (NewWidth != Width || NewHeight != Height)
 			{
 				Context->GetDevice().waitIdle();
-				std::cout << "Window Resized" << std::endl;
 
 				Swapchain.BuildSwapchain();
 				
@@ -172,6 +171,7 @@ int main(int, char**)
 				Pipeline.Scissor.extent = Swapchain.GetExtent();
 				Pipeline.BuildPipeline(RenderPass);
 
+				//Recall this lambda
 				BuildDrawingCommandBuffers();
 
 				Width = NewWidth;

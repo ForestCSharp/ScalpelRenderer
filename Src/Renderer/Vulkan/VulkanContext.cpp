@@ -22,7 +22,7 @@ VulkanContext::~VulkanContext()
 
 void VulkanContext::Startup(GLFWwindow* window)
 {
-    std::cout << "--- BEGIN VULKAN RENDERER STARTUP ---" << std::endl;
+    std::cout << "--- BEGIN VULKAN CONTEXT STARTUP ---" << std::endl;
     CreateInstance();
     SetupDebugCallback();
 	CreateGLFWSurface(window);
@@ -32,7 +32,7 @@ void VulkanContext::Startup(GLFWwindow* window)
 
 void VulkanContext::Shutdown()
 {
-    std::cout << "--- BEGIN VULKAN RENDERER SHUTDOWN ---" << std::endl;
+    std::cout << "--- BEGIN VULKAN CONTEXT SHUTDOWN ---" << std::endl;
 
 	Device.destroyCommandPool(CommandPool, nullptr);
     Device.destroy(nullptr);
@@ -235,14 +235,14 @@ void VulkanContext::CreateDeviceAndQueues()
             if (QueueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics)
             {
                 GraphicsQueueIndex = i;
-                std::cout << "Using Device with Graphics Queue Support: " << PhysicalDeviceProperties.deviceName <<  " | Graphics Index: " << i << std::endl;  
+                std::cout << "Using Device with Graphics Queue Support: " << PhysicalDeviceProperties.deviceName <<  " | QueueIndex: " << i << std::endl;  
             }
 
 			//Ensure our graphics queue also has presentation support 
 			if (CurrPhysicalDevice.getSurfaceSupportKHR(i, Surface))
 			{
 				PresentQueueIndex = i;
-				std::cout << "Using Device with Presentation Queue Support:"  << PhysicalDeviceProperties.deviceName <<  " | Presentation Index: "<< i << std::endl;
+				std::cout << "Using Device with Presentation Queue Support:"  << PhysicalDeviceProperties.deviceName <<  " | QueueIndex: "<< i << std::endl;
 			}
 
 			if (GraphicsQueueIndex != -1 && PresentQueueIndex != -1)
