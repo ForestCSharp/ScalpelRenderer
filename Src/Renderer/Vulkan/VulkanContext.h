@@ -73,7 +73,7 @@ public:
 		}
 
         return SingletonPtr;
-    }
+	}
 
 	//TODO: This function doesn't really have a good place to live... 
 	//		potentially abstract out Vulkan Memory Allocation?

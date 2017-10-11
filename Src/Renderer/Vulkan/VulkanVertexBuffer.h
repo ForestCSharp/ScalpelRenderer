@@ -55,6 +55,8 @@ public:
 
 protected:
 
+	void CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::UniqueBuffer& OutBuffer, vk::UniqueDeviceMemory& OutMemory);
+	void CopyBuffer(vk::UniqueBuffer& SourceBuffer, vk::UniqueBuffer& DestinationBuffer, vk::DeviceSize CopySize);
 	uint32_t FindMemoryType(uint32_t TypeFilter, vk::MemoryPropertyFlags Properties);
 
 protected:
