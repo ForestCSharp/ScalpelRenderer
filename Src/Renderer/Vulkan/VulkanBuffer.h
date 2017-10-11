@@ -46,11 +46,11 @@ const std::vector<Vertex> vertices =
     {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
 };
 
-class VulkanVertexBuffer
+class VulkanBuffer
 {
 public:
 
-	VulkanVertexBuffer();
+	VulkanBuffer();
 	const vk::Buffer GetHandle() { return Buffer.get(); }
 
 protected:

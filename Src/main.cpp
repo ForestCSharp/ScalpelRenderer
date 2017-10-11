@@ -10,7 +10,7 @@
 #include "Renderer/Vulkan/VulkanSwapchain.h"
 #include "Renderer/Vulkan/VulkanGraphicsPipeline.h"
 #include "Renderer/Vulkan/VulkanRenderPass.h"
-#include "Renderer/Vulkan/VulkanVertexBuffer.h"
+#include "Renderer/Vulkan/VulkanBuffer.h"
 
 #include <GLFW\glfw3.h>
 
@@ -44,7 +44,7 @@ int main(int, char**)
 		VulkanRenderPass RenderPass;
 		RenderPass.BuildRenderPass(Swapchain);
 
-		VulkanVertexBuffer VertexBuffer;
+		VulkanBuffer VertexBuffer;
 
 		VulkanGraphicsPipeline Pipeline;
 

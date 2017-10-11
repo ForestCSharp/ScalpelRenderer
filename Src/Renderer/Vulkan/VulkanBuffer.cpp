@@ -1,8 +1,8 @@
-#include "VulkanVertexBuffer.h"
+#include "VulkanBuffer.h"
 
 #include "VulkanContext.h"
 
-VulkanVertexBuffer::VulkanVertexBuffer()
+VulkanBuffer::VulkanBuffer()
 {
 	//TODO: Take in vertices as argument
 	vk::DeviceSize BufferSize = sizeof(vertices[0]) * vertices.size();
@@ -23,7 +23,7 @@ VulkanVertexBuffer::VulkanVertexBuffer()
 	CopyBuffer(StagingBuffer, Buffer, BufferSize);
 }
 
-void VulkanVertexBuffer::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::UniqueBuffer& OutBuffer, vk::UniqueDeviceMemory& OutMemory)
+void VulkanBuffer::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::UniqueBuffer& OutBuffer, vk::UniqueDeviceMemory& OutMemory)
 {
 	vk::Device Device = VulkanContext::Get()->GetDevice();
 	
@@ -45,7 +45,7 @@ void VulkanVertexBuffer::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags 
 	Device.bindBufferMemory(OutBuffer.get(), OutMemory.get(), 0);
 }
 
-void VulkanVertexBuffer::CopyBuffer(vk::UniqueBuffer& SourceBuffer, vk::UniqueBuffer& DestinationBuffer, vk::DeviceSize CopySize)
+void VulkanBuffer::CopyBuffer(vk::UniqueBuffer& SourceBuffer, vk::UniqueBuffer& DestinationBuffer, vk::DeviceSize CopySize)
 {
 	vk::CommandBufferAllocateInfo AllocInfo;
 	AllocInfo.level = vk::CommandBufferLevel::ePrimary;
