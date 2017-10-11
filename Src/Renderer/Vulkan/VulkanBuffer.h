@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-//TODO: Generic parent class with pure virtual functions for binding and attribute descriptions?
+//TODO: Move this. Buffer should only know about its data, shouldn't care about contents
 struct Vertex
 {
 	glm::vec2 pos;
@@ -50,7 +50,7 @@ class VulkanBuffer
 {
 public:
 
-	VulkanBuffer();
+	VulkanBuffer(void* Data, size_t DataSize);
 	const vk::Buffer GetHandle() { return Buffer.get(); }
 
 protected:

@@ -44,7 +44,7 @@ int main(int, char**)
 		VulkanRenderPass RenderPass;
 		RenderPass.BuildRenderPass(Swapchain);
 
-		VulkanBuffer VertexBuffer;
+		VulkanBuffer VertexBuffer((void*) &vertices, sizeof(vertices[0]) * vertices.size());
 
 		VulkanGraphicsPipeline Pipeline;
 

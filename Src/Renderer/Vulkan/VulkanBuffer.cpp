@@ -2,25 +2,22 @@
 
 #include "VulkanContext.h"
 
-VulkanBuffer::VulkanBuffer()
-{
-	//TODO: Take in vertices as argument
-	vk::DeviceSize BufferSize = sizeof(vertices[0]) * vertices.size();
-	
+VulkanBuffer::VulkanBuffer(void* Data, size_t DataSize)
+{	
 	//Staging Buffer
 	vk::UniqueBuffer StagingBuffer;
 	vk::UniqueDeviceMemory StagingMemory;
-	CreateBuffer(BufferSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, StagingBuffer, StagingMemory);
+	CreateBuffer(DataSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, StagingBuffer, StagingMemory);
 
 	vk::Device Device = VulkanContext::Get()->GetDevice();
 
-	void* data = Device.mapMemory(StagingMemory.get(), 0, BufferSize);
-	memcpy(data, vertices.data(), (size_t) BufferSize);
+	void* data = Device.mapMemory(StagingMemory.get(), 0, DataSize);
+	memcpy(data, vertices.data(), (size_t) DataSize);
 	Device.unmapMemory(StagingMemory.get());
 
-	CreateBuffer(BufferSize, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, Buffer, Memory);
+	CreateBuffer(DataSize, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, Buffer, Memory);
 
-	CopyBuffer(StagingBuffer, Buffer, BufferSize);
+	CopyBuffer(StagingBuffer, Buffer, DataSize);
 }
 
 void VulkanBuffer::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::UniqueBuffer& OutBuffer, vk::UniqueDeviceMemory& OutMemory)
