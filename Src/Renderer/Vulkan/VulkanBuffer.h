@@ -39,18 +39,29 @@ struct Vertex
 	}
 };
 
-const std::vector<Vertex> vertices = 
+const std::vector<Vertex> vertices = {
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const std::vector<uint16_t> indices = {
+    0, 1, 2, 2, 3, 0
+};
+
+//Type of Buffer to create
+enum class EBufferType
 {
-    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+	VertexBuffer,
+	IndexBuffer
 };
 
 class VulkanBuffer
 {
 public:
 
-	VulkanBuffer(void* Data, size_t DataSize);
+	VulkanBuffer(void* Data, vk::DeviceSize DataSize, EBufferType BufferType);
 	const vk::Buffer GetHandle() { return Buffer.get(); }
 
 protected:

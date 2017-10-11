@@ -44,7 +44,8 @@ int main(int, char**)
 		VulkanRenderPass RenderPass;
 		RenderPass.BuildRenderPass(Swapchain);
 
-		VulkanBuffer VertexBuffer((void*) &vertices, sizeof(vertices[0]) * vertices.size());
+		VulkanBuffer VertexBuffer((void*) vertices.data(), sizeof(vertices[0]) * vertices.size(), EBufferType::VertexBuffer);
+		VulkanBuffer IndexBuffer((void*) indices.data(), sizeof(indices[0]) * indices.size(), EBufferType::IndexBuffer);
 
 		VulkanGraphicsPipeline Pipeline;
 
@@ -133,17 +134,16 @@ int main(int, char**)
 				CmdBuffer().beginRenderPass(BeginInfo, vk::SubpassContents::eInline);
 				CmdBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, Pipeline.GetHandle());
 				
-				//Vertex Buffer Binding
 				vk::Buffer VertexBuffers[] = {VertexBuffer.GetHandle()};
 				vk::DeviceSize Offsets[] = {0};
 				CmdBuffer().bindVertexBuffers(0, 1, VertexBuffers, Offsets);
-				CmdBuffer().draw(static_cast<uint32_t>(vertices.size()),1,0,0);
-				//End Vertex Buffer Binding
-
+				CmdBuffer().bindIndexBuffer(IndexBuffer.GetHandle(), 0, vk::IndexType::eUint16);
+				CmdBuffer().drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 				CmdBuffer().endRenderPass();
 				CmdBuffer.End();
 			}
 		};
+
 		BuildDrawingCommandBuffers();
 
 		vk::UniqueSemaphore ImageAvailableSemaphore = Context->GetDevice().createSemaphoreUnique(vk::SemaphoreCreateInfo());
@@ -206,7 +206,6 @@ int main(int, char**)
 			vk::SwapchainKHR SwapChains[] = {Swapchain.GetHandle()};
 			PresentInfo.swapchainCount = 1;
 			PresentInfo.pSwapchains = SwapChains;
-
 			PresentInfo.pImageIndices = &ImageIndex;
 
 			Context->GetPresentQueue().presentKHR(PresentInfo);
