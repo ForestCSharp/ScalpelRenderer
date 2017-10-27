@@ -1,4 +1,5 @@
 build/
+Scalpel.dir/
 
 # Compiled Object files
 *.slo
