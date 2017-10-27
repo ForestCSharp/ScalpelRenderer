@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include <vector>
@@ -57,18 +59,19 @@ enum class EBufferType
 	IndexBuffer
 };
 
+//TODO: Move to own file
+class VulkanBufferUtils 
+{
+public:
+	static void CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::UniqueBuffer& OutBuffer, vk::UniqueDeviceMemory& OutMemory);
+	static void CopyBuffer(vk::UniqueBuffer& SourceBuffer, vk::UniqueBuffer& DestinationBuffer, vk::DeviceSize CopySize);
+};
+
 class VulkanBuffer
 {
 public:
-
 	VulkanBuffer(void* Data, vk::DeviceSize DataSize, EBufferType BufferType);
 	const vk::Buffer GetHandle() { return Buffer.get(); }
-
-protected:
-
-	void CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::UniqueBuffer& OutBuffer, vk::UniqueDeviceMemory& OutMemory);
-	void CopyBuffer(vk::UniqueBuffer& SourceBuffer, vk::UniqueBuffer& DestinationBuffer, vk::DeviceSize CopySize);
-	uint32_t FindMemoryType(uint32_t TypeFilter, vk::MemoryPropertyFlags Properties);
 
 protected:
 

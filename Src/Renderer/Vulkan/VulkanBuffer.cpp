@@ -14,23 +14,23 @@ VulkanBuffer::VulkanBuffer(void* Data, vk::DeviceSize DataSize, EBufferType Buff
 		break;
 	} 
 
+	vk::Device Device = VulkanContext::Get()->GetDevice();
+
 	//Staging Buffer
 	vk::UniqueBuffer StagingBuffer;
 	vk::UniqueDeviceMemory StagingMemory;
-	CreateBuffer(DataSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, StagingBuffer, StagingMemory);
-
-	vk::Device Device = VulkanContext::Get()->GetDevice();
+	VulkanBufferUtils::CreateBuffer(DataSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, StagingBuffer, StagingMemory);
 
 	void* MappedMemory = Device.mapMemory(StagingMemory.get(), 0, DataSize);
 	memcpy(MappedMemory, Data, (size_t) DataSize);
 	Device.unmapMemory(StagingMemory.get());
 
-	CreateBuffer(DataSize, vk::BufferUsageFlagBits::eTransferDst | BufferTypeBit, vk::MemoryPropertyFlagBits::eDeviceLocal, Buffer, Memory);
+	VulkanBufferUtils::CreateBuffer(DataSize, vk::BufferUsageFlagBits::eTransferDst | BufferTypeBit, vk::MemoryPropertyFlagBits::eDeviceLocal, Buffer, Memory);
 
-	CopyBuffer(StagingBuffer, Buffer, DataSize);
+	VulkanBufferUtils::CopyBuffer(StagingBuffer, Buffer, DataSize);
 }
 
-void VulkanBuffer::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::UniqueBuffer& OutBuffer, vk::UniqueDeviceMemory& OutMemory)
+void VulkanBufferUtils::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::UniqueBuffer& OutBuffer, vk::UniqueDeviceMemory& OutMemory)
 {
 	vk::Device Device = VulkanContext::Get()->GetDevice();
 	
@@ -52,7 +52,7 @@ void VulkanBuffer::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
 	Device.bindBufferMemory(OutBuffer.get(), OutMemory.get(), 0);
 }
 
-void VulkanBuffer::CopyBuffer(vk::UniqueBuffer& SourceBuffer, vk::UniqueBuffer& DestinationBuffer, vk::DeviceSize CopySize)
+void VulkanBufferUtils::CopyBuffer(vk::UniqueBuffer& SourceBuffer, vk::UniqueBuffer& DestinationBuffer, vk::DeviceSize CopySize)
 {
 	vk::CommandBufferAllocateInfo AllocInfo;
 	AllocInfo.level = vk::CommandBufferLevel::ePrimary;

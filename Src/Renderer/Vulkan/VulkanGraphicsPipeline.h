@@ -13,6 +13,7 @@ public:
 	
 	void BuildPipeline(class VulkanRenderPass& RenderPass);
 	vk::Pipeline GetHandle() { return GraphicsPipeline.get(); }
+	vk::PipelineLayout GetLayout() { return PipelineLayout.get(); }
 
 protected: //Internal Pipeline Member variable
 

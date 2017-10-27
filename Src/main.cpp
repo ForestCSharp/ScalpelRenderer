@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <memory>
+#include <chrono>
 
 #include "Renderer/Vulkan/VulkanContext.h"
 #include "Renderer/Vulkan/VulkanCommandBuffer.h"
@@ -11,6 +12,7 @@
 #include "Renderer/Vulkan/VulkanGraphicsPipeline.h"
 #include "Renderer/Vulkan/VulkanRenderPass.h"
 #include "Renderer/Vulkan/VulkanBuffer.h"
+#include "Renderer/Vulkan/VulkanUniform.h"
 
 #include <GLFW\glfw3.h>
 
@@ -23,14 +25,12 @@ int main(int, char**)
 {
 	// Setup window
 	glfwSetErrorCallback(error_callback);
-	if (!glfwInit())
+	if (!glfwInit()) {
 		return 1;
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	}
+
 	glfwWindowHint( GLFW_CLIENT_API, GLFW_NO_API );
 	GLFWwindow* window = glfwCreateWindow(1080, 720, "Scalpel", NULL, NULL);
-	glfwMakeContextCurrent(window);
 
 	//TODO: VULKAN RENDERER TESTING
 	VulkanContext* Context = VulkanContext::Get();
@@ -46,6 +46,32 @@ int main(int, char**)
 
 		VulkanBuffer VertexBuffer((void*) vertices.data(), sizeof(vertices[0]) * vertices.size(), EBufferType::VertexBuffer);
 		VulkanBuffer IndexBuffer((void*) indices.data(), sizeof(indices[0]) * indices.size(), EBufferType::IndexBuffer);
+
+		struct UniformBufferObject {
+			glm::mat4 model;
+			glm::mat4 view;
+			glm::mat4 proj;
+		};
+
+		VulkanUniform UniformBuffer(sizeof(UniformBufferObject));
+
+		auto UpdateUniformData = [&] (VulkanUniform& Uniform) 
+		{
+			static auto startTime = std::chrono::high_resolution_clock::now();
+			
+			auto currentTime = std::chrono::high_resolution_clock::now();
+			float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
+
+			UniformBufferObject Ubo;
+			Ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			Ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			Ubo.proj =  glm::perspective(glm::radians(45.0f), Swapchain.GetExtent().width / (float) Swapchain.GetExtent().height, 0.1f, 10.0f);
+			Ubo.proj[1][1] *= -1;
+
+			Uniform.UpdateUniformData(&Ubo, sizeof(UniformBufferObject));
+		};
+		UpdateUniformData(UniformBuffer);
+
 
 		VulkanGraphicsPipeline Pipeline;
 
@@ -70,7 +96,7 @@ int main(int, char**)
 		Pipeline.Rasterizer.polygonMode = vk::PolygonMode::eFill;
 		Pipeline.Rasterizer.lineWidth = 1.0f;
 		Pipeline.Rasterizer.cullMode = vk::CullModeFlagBits::eBack;
-		Pipeline.Rasterizer.frontFace = vk::FrontFace::eClockwise;
+		Pipeline.Rasterizer.frontFace = vk::FrontFace::eCounterClockwise;
 		Pipeline.Rasterizer.depthBiasEnable = VK_FALSE;
 
 		Pipeline.Multisampling.sampleShadingEnable = VK_FALSE;
@@ -89,10 +115,60 @@ int main(int, char**)
 		Pipeline.ColorBlending.blendConstants[0] = 0.0f;
         Pipeline.ColorBlending.blendConstants[1] = 0.0f;
         Pipeline.ColorBlending.blendConstants[2] = 0.0f;
-        Pipeline.ColorBlending.blendConstants[3] = 0.0f;
+		Pipeline.ColorBlending.blendConstants[3] = 0.0f;
+		
+		//BEGIN DESCRIPTOR SET AND DESCRIPTOR SET LAYOUT SETUP
+		//TODO: Easy-To-Use interface for Binding Descriptors
+		
+		/* DESC SET LAYOUT */
+		vk::DescriptorSetLayoutBinding UniformLayoutBinding;
+		UniformLayoutBinding.binding = 0;
+		UniformLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+		UniformLayoutBinding.descriptorCount = 1;
+		UniformLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+		
+		vk::DescriptorSetLayoutCreateInfo DescriptorLayoutCreateInfo;
+		DescriptorLayoutCreateInfo.bindingCount = 1;
+		DescriptorLayoutCreateInfo.pBindings = &UniformLayoutBinding;
 
-		Pipeline.PipelineLayoutCreateInfo.setLayoutCount = 0;
-		Pipeline.PipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+		vk::UniqueDescriptorSetLayout DescriptorSetLayout = Context->GetDevice().createDescriptorSetLayoutUnique(DescriptorLayoutCreateInfo);
+
+		Pipeline.PipelineLayoutCreateInfo.setLayoutCount = 1;
+		Pipeline.PipelineLayoutCreateInfo.pSetLayouts = &(DescriptorSetLayout.get());
+		
+		/* DESC SET */
+		vk::DescriptorPoolSize PoolSize;
+		PoolSize.type = vk::DescriptorType::eUniformBuffer;
+		PoolSize.descriptorCount = 1;
+
+		vk::DescriptorPoolCreateInfo PoolCreateInfo;
+		PoolCreateInfo.poolSizeCount = 1;
+		PoolCreateInfo.pPoolSizes = &PoolSize;
+		PoolCreateInfo.maxSets = 1;
+		PoolCreateInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+
+		vk::UniqueDescriptorPool DescriptorPool = Context->GetDevice().createDescriptorPoolUnique(PoolCreateInfo);
+		
+		vk::DescriptorSetAllocateInfo DescriptorSetAllocInfo;
+		DescriptorSetAllocInfo.descriptorPool = DescriptorPool.get();
+		DescriptorSetAllocInfo.descriptorSetCount = 1;
+		DescriptorSetAllocInfo.pSetLayouts = &(DescriptorSetLayout.get());
+		
+		std::vector<vk::UniqueDescriptorSet> DescriptorSets = Context->GetDevice().allocateDescriptorSetsUnique(DescriptorSetAllocInfo);
+		vk::UniqueDescriptorSet& DescriptorSet = DescriptorSets[0]; //Just for ease of access later
+
+		vk::WriteDescriptorSet DescriptorWrite;
+		DescriptorWrite.dstSet = DescriptorSet.get();
+		DescriptorWrite.dstBinding = 0;
+		DescriptorWrite.dstArrayElement = 0;
+		DescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+		DescriptorWrite.descriptorCount = 1;
+		DescriptorWrite.pBufferInfo = &UniformBuffer.GetDescriptorInfo();
+
+		std::vector<vk::WriteDescriptorSet> DescriptorWrites = {DescriptorWrite};
+		Context->GetDevice().updateDescriptorSets(DescriptorWrites, nullptr);
+
+		//END DESCRIPTOR SET AND DESCRIPTOR SET LAYOUT SETUP
 
 		Pipeline.DepthStencil.depthTestEnable = VK_TRUE;
 		Pipeline.DepthStencil.depthWriteEnable = VK_TRUE;
@@ -138,6 +214,7 @@ int main(int, char**)
 				vk::DeviceSize Offsets[] = {0};
 				CmdBuffer().bindVertexBuffers(0, 1, VertexBuffers, Offsets);
 				CmdBuffer().bindIndexBuffer(IndexBuffer.GetHandle(), 0, vk::IndexType::eUint16);
+				CmdBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, Pipeline.GetLayout(), 0, 1, &DescriptorSet.get(), 0, nullptr);
 				CmdBuffer().drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 				CmdBuffer().endRenderPass();
 				CmdBuffer.End();
@@ -177,6 +254,8 @@ int main(int, char**)
 				Width = NewWidth;
 				Height = NewHeight;
 			}
+
+			UpdateUniformData(UniformBuffer);
 
 			glfwPollEvents();
 
