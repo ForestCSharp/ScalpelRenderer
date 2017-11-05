@@ -14,12 +14,27 @@ VulkanCommandBuffer::VulkanCommandBuffer()
 
 void VulkanCommandBuffer::Begin()
 {
+	Begin(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
+}
+
+void VulkanCommandBuffer::Begin(vk::CommandBufferUsageFlags Flags)
+{
 	vk::CommandBufferBeginInfo BeginInfo;
-	BeginInfo.flags = vk::CommandBufferUsageFlagBits::eSimultaneousUse;
+	BeginInfo.flags = Flags;
 	CommandBuffer.begin(BeginInfo);
 }
 
 void VulkanCommandBuffer::End()
 {
 	CommandBuffer.end();
+}
+
+void VulkanCommandBuffer::SubmitWaitIdle()
+{
+	vk::SubmitInfo SubmitInfo;
+	SubmitInfo.commandBufferCount = 1;
+	SubmitInfo.pCommandBuffers = &CommandBuffer;
+	
+	VulkanContext::Get()->GetGraphicsQueue().submit(1, &SubmitInfo, vk::Fence());
+	VulkanContext::Get()->GetGraphicsQueue().waitIdle();
 }

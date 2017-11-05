@@ -1,5 +1,6 @@
 #include "VulkanBuffer.h"
 #include "VulkanContext.h"
+#include "VulkanCommandBuffer.h"
 
 VulkanBuffer::VulkanBuffer(void* Data, vk::DeviceSize DataSize, EBufferType BufferType)
 {
@@ -54,27 +55,11 @@ void VulkanBufferUtils::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags u
 
 void VulkanBufferUtils::CopyBuffer(vk::UniqueBuffer& SourceBuffer, vk::UniqueBuffer& DestinationBuffer, vk::DeviceSize CopySize)
 {
-	vk::CommandBufferAllocateInfo AllocInfo;
-	AllocInfo.level = vk::CommandBufferLevel::ePrimary;
-	AllocInfo.commandPool = VulkanContext::Get()->GetCommandPool();
-	AllocInfo.commandBufferCount = 1;
-
-	std::vector<vk::UniqueCommandBuffer> CommandBuffers = VulkanContext::Get()->GetDevice().allocateCommandBuffersUnique(AllocInfo);
-	vk::UniqueCommandBuffer& CommandBuffer = CommandBuffers[0];
-	
-	vk::CommandBufferBeginInfo BeginInfo;
-	BeginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-	
-	CommandBuffer->begin(BeginInfo);
+	VulkanCommandBuffer CommandBuffer;
+	CommandBuffer.Begin(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 	vk::BufferCopy CopyRegion;
 	CopyRegion.size = CopySize;
-	CommandBuffer->copyBuffer(SourceBuffer.get(), DestinationBuffer.get(), 1, &CopyRegion);
-	CommandBuffer->end();
-
-	vk::SubmitInfo SubmitInfo;
-	SubmitInfo.commandBufferCount = 1;
-	SubmitInfo.pCommandBuffers = &(CommandBuffer.get());
-	
-	VulkanContext::Get()->GetGraphicsQueue().submit(1, &SubmitInfo, vk::Fence());
-	VulkanContext::Get()->GetGraphicsQueue().waitIdle();
+	CommandBuffer.Get().copyBuffer(SourceBuffer.get(), DestinationBuffer.get(), 1, &CopyRegion);
+	CommandBuffer.End();
+	CommandBuffer.SubmitWaitIdle();
 }

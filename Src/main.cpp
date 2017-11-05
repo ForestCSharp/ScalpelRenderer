@@ -13,17 +13,17 @@
 #include "Renderer/Vulkan/VulkanRenderPass.h"
 #include "Renderer/Vulkan/VulkanBuffer.h"
 #include "Renderer/Vulkan/VulkanUniform.h"
+#include "Renderer/Vulkan/VulkanImage.h"
 
 #include <GLFW\glfw3.h>
-
-static void error_callback(int error, const char* description)
-{
-	fprintf(stderr, "Error %d: %s\n", error, description);
-}
 
 int main(int, char**)
 {
 	// Setup window
+	auto error_callback = [] (int error, const char* description)
+	{
+		std::cout << "Error: " << error << " desc: " << description << std::endl;	
+	};
 	glfwSetErrorCallback(error_callback);
 	if (!glfwInit()) {
 		return 1;
@@ -31,6 +31,16 @@ int main(int, char**)
 
 	glfwWindowHint( GLFW_CLIENT_API, GLFW_NO_API );
 	GLFWwindow* window = glfwCreateWindow(1080, 720, "Scalpel", NULL, NULL);
+	
+	auto key_callback = [] (GLFWwindow* window, int key, int scancode, int action, int mods)
+	{
+		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		{
+			glfwSetWindowShouldClose(window, true);
+		}
+	};
+
+	glfwSetKeyCallback(window, key_callback);
 
 	//TODO: VULKAN RENDERER TESTING
 	VulkanContext* Context = VulkanContext::Get();
@@ -46,6 +56,9 @@ int main(int, char**)
 
 		VulkanBuffer VertexBuffer((void*) vertices.data(), sizeof(vertices[0]) * vertices.size(), EBufferType::VertexBuffer);
 		VulkanBuffer IndexBuffer((void*) indices.data(), sizeof(indices[0]) * indices.size(), EBufferType::IndexBuffer);
+
+		std::string ImageName("textures/test.png");
+		VulkanImage Image(ImageName);
 
 		struct UniformBufferObject {
 			glm::mat4 model;
@@ -185,7 +198,6 @@ int main(int, char**)
 		std::vector<VulkanCommandBuffer> CommandBuffers;
 		CommandBuffers.resize(RenderPass.GetFramebuffers().size());
 
-		//TODO: Eventually these sort of command buffers will be tied to classes of things we need to draw
 		// (i.e. static meshes, skinned meshes, etc.)
 		//Wrapped in lambda for window resize below
 		auto BuildDrawingCommandBuffers = [&]()

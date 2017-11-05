@@ -153,6 +153,7 @@ void VulkanSwapchain::CreateDepthBuffer()
 	
 	bool HasStencil = (DepthFormat == vk::Format::eD32SfloatS8Uint) || (DepthFormat == vk::Format::eD24UnormS8Uint);
 
+	//TODO: Port to using helper function created in VulkanImage
 	vk::ImageCreateInfo ImageInfo;
 	ImageInfo.imageType = vk::ImageType::e2D;
 	ImageInfo.format = DepthFormat;

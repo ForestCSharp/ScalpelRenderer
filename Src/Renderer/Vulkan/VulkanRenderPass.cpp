@@ -11,7 +11,6 @@ VulkanRenderPass::VulkanRenderPass()
 void VulkanRenderPass::BuildRenderPass(VulkanSwapchain& Swapchain)
 {
 	//TODO: Make generic
-	//TODO: Make config structs member vars
 	//TODO: way to build up attachments dynamically
 
 	vk::AttachmentDescription ColorAttachment;
@@ -64,9 +63,8 @@ void VulkanRenderPass::BuildRenderPass(VulkanSwapchain& Swapchain)
 	//Subpass Dependency
 	vk::SubpassDependency Dependency;
 	Dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	Dependency.dstSubpass = 0;
+	Dependency.dstSubpass = 0; //Currently only have the one subpass
 	Dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-	//Dependency.srcAccessMask = 0;
 	Dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	Dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
 	

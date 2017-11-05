@@ -1,5 +1,6 @@
 build/
 Scalpel.dir/
+.vscode/
 
 # Compiled Object files
 *.slo
