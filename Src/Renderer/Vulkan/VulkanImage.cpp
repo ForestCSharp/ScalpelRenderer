@@ -50,8 +50,11 @@ void VulkanImage::LoadImageFromFile(std::string& filename)
     CreateImage(texWidth, texHeight, vk::Format::eR8G8B8A8Unorm, vk::ImageTiling::eOptimal,
     vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal);
 
+    //Transition layout to transfer so we can copy from our buffer into our image object
     TransitionImageLayout(vk::ImageLayout::eTransferDstOptimal);
     CopyBufferToImage(StagingBuffer.get(), static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+   
+    //Transition the layout again so this image can be read by the fragment shader
     TransitionImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 }
 
@@ -152,4 +155,63 @@ void VulkanImage::CopyBufferToImage(vk::Buffer Buffer, uint32_t width, uint32_t 
     CommandBuffer.Get().copyBufferToImage(Buffer, Image.get(), vk::ImageLayout::eTransferDstOptimal, 1, &CopyRegion);
     CommandBuffer.End();
     CommandBuffer.SubmitWaitIdle();
+}
+
+vk::ImageView VulkanImage::GetImageView()
+{
+    if (!bImageViewBuilt)
+    {
+        CreateImageView();
+        bImageViewBuilt = true;
+    }
+    return ImageView.get();
+}
+
+void VulkanImage::CreateImageView()
+{
+    vk::ImageViewCreateInfo ViewInfo;
+    ViewInfo.image = Image.get();
+    ViewInfo.viewType = vk::ImageViewType::e2D;
+    ViewInfo.format = ImageFormat;
+    ViewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+    ViewInfo.subresourceRange.baseMipLevel = 0;
+    ViewInfo.subresourceRange.levelCount = 1;
+    ViewInfo.subresourceRange.baseArrayLayer = 0;
+    ViewInfo.subresourceRange.layerCount = 1;
+
+    vk::Device Device = VulkanContext::Get()->GetDevice();
+    ImageView = Device.createImageViewUnique(ViewInfo);
+}
+
+vk::Sampler VulkanImage::GetSampler()
+{
+    if (!bSamplerBuilt)
+    {
+        CreateSampler();
+        bSamplerBuilt = true;
+    }
+    return ImageSampler.get();
+}
+
+void VulkanImage::CreateSampler()
+{
+    vk::SamplerCreateInfo SamplerInfo;
+    SamplerInfo.magFilter = vk::Filter::eLinear;
+    SamplerInfo.minFilter = vk::Filter::eLinear;
+    SamplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
+    SamplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
+    SamplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
+    SamplerInfo.anisotropyEnable = VK_TRUE;
+    SamplerInfo.maxAnisotropy = 16;
+    SamplerInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;
+    SamplerInfo.unnormalizedCoordinates = VK_FALSE;
+    SamplerInfo.compareEnable = VK_FALSE;
+    SamplerInfo.compareOp = vk::CompareOp::eAlways;
+    SamplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
+    SamplerInfo.mipLodBias = 0.0f;
+    SamplerInfo.minLod = 0.0f;
+    SamplerInfo.maxLod = 0.0f;
+
+    vk::Device Device = VulkanContext::Get()->GetDevice();
+    ImageSampler = Device.createSamplerUnique(SamplerInfo);
 }

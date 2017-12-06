@@ -21,10 +21,26 @@ public:
 
     void CopyBufferToImage(vk::Buffer Buffer, uint32_t width, uint32_t height);
 
+    //Optional Image View
+    vk::ImageView GetImageView();
+    void CreateImageView();
+
+    //Optional Sampler
+    vk::Sampler GetSampler();
+    void CreateSampler();
+
 protected:
 
     vk::UniqueImage Image;
     vk::Format ImageFormat;
     vk::ImageLayout ImageLayout;
     vk::UniqueDeviceMemory ImageMemory;
+
+    //Optional Image View
+    vk::UniqueImageView ImageView;
+    bool bImageViewBuilt = false;
+
+    //Optional Sampler
+    vk::UniqueSampler ImageSampler;
+    bool bSamplerBuilt = false;
 };

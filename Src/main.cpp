@@ -59,6 +59,8 @@ int main(int, char**)
 
 		std::string ImageName("textures/test.png");
 		VulkanImage Image(ImageName);
+		vk::ImageView ImageView = Image.GetImageView();
+		vk::Sampler ImageSampler = Image.GetSampler();
 
 		struct UniformBufferObject {
 			glm::mat4 model;
@@ -133,52 +135,77 @@ int main(int, char**)
 		//BEGIN DESCRIPTOR SET AND DESCRIPTOR SET LAYOUT SETUP
 		//TODO: Easy-To-Use interface for Binding Descriptors
 		
-		/* DESC SET LAYOUT */
+		/* DESC SET BINDINGS */
 		vk::DescriptorSetLayoutBinding UniformLayoutBinding;
 		UniformLayoutBinding.binding = 0;
 		UniformLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
 		UniformLayoutBinding.descriptorCount = 1;
 		UniformLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+
+		vk::DescriptorSetLayoutBinding TextureLayoutBinding;
+		TextureLayoutBinding.binding = 1;
+		TextureLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		TextureLayoutBinding.descriptorCount = 1;
+		TextureLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+		std::array<vk::DescriptorSetLayoutBinding, 2> Bindings = {UniformLayoutBinding, TextureLayoutBinding};
 		
 		vk::DescriptorSetLayoutCreateInfo DescriptorLayoutCreateInfo;
-		DescriptorLayoutCreateInfo.bindingCount = 1;
-		DescriptorLayoutCreateInfo.pBindings = &UniformLayoutBinding;
+		DescriptorLayoutCreateInfo.bindingCount = static_cast<uint32_t>(Bindings.size());
+		DescriptorLayoutCreateInfo.pBindings = Bindings.data();
 
+		/* DESC SET LAYOUT (hooks into pipeline) */
 		vk::UniqueDescriptorSetLayout DescriptorSetLayout = Context->GetDevice().createDescriptorSetLayoutUnique(DescriptorLayoutCreateInfo);
 
 		Pipeline.PipelineLayoutCreateInfo.setLayoutCount = 1;
 		Pipeline.PipelineLayoutCreateInfo.pSetLayouts = &(DescriptorSetLayout.get());
 		
-		/* DESC SET */
-		vk::DescriptorPoolSize PoolSize;
-		PoolSize.type = vk::DescriptorType::eUniformBuffer;
-		PoolSize.descriptorCount = 1;
+		/* DESC POOL CREATION*/
+		std::array<vk::DescriptorPoolSize, 2> poolSizes = {};
+		poolSizes[0].type = vk::DescriptorType::eUniformBuffer;
+		poolSizes[0].descriptorCount = 1;
+		poolSizes[1].type = vk::DescriptorType::eCombinedImageSampler;
+		poolSizes[1].descriptorCount = 1;
 
 		vk::DescriptorPoolCreateInfo PoolCreateInfo;
-		PoolCreateInfo.poolSizeCount = 1;
-		PoolCreateInfo.pPoolSizes = &PoolSize;
+		PoolCreateInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+		PoolCreateInfo.pPoolSizes = poolSizes.data();
 		PoolCreateInfo.maxSets = 1;
 		PoolCreateInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 
 		vk::UniqueDescriptorPool DescriptorPool = Context->GetDevice().createDescriptorPoolUnique(PoolCreateInfo);
 		
+		/* Allocate Actual Descriptor Sets from Pool */
 		vk::DescriptorSetAllocateInfo DescriptorSetAllocInfo;
 		DescriptorSetAllocInfo.descriptorPool = DescriptorPool.get();
 		DescriptorSetAllocInfo.descriptorSetCount = 1;
 		DescriptorSetAllocInfo.pSetLayouts = &(DescriptorSetLayout.get());
-		
+	
 		std::vector<vk::UniqueDescriptorSet> DescriptorSets = Context->GetDevice().allocateDescriptorSetsUnique(DescriptorSetAllocInfo);
 		vk::UniqueDescriptorSet& DescriptorSet = DescriptorSets[0]; //Just for ease of access later
 
-		vk::WriteDescriptorSet DescriptorWrite;
-		DescriptorWrite.dstSet = DescriptorSet.get();
-		DescriptorWrite.dstBinding = 0;
-		DescriptorWrite.dstArrayElement = 0;
-		DescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		DescriptorWrite.descriptorCount = 1;
-		DescriptorWrite.pBufferInfo = &UniformBuffer.GetDescriptorInfo();
+		//Actually reference our image view and sampler
+		//TODO: Move to VulkanImage
+		vk::DescriptorImageInfo imageInfo = {};
+		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		imageInfo.imageView = ImageView;
+		imageInfo.sampler = ImageSampler;
 
-		std::vector<vk::WriteDescriptorSet> DescriptorWrites = {DescriptorWrite};
+		std::array<vk::WriteDescriptorSet,2> DescriptorWrites;
+		DescriptorWrites[0].dstSet = DescriptorSet.get();
+		DescriptorWrites[0].dstBinding = 0;
+		DescriptorWrites[0].dstArrayElement = 0;
+		DescriptorWrites[0].descriptorType = vk::DescriptorType::eUniformBuffer;
+		DescriptorWrites[0].descriptorCount = 1;
+		DescriptorWrites[0].pBufferInfo = &UniformBuffer.GetDescriptorInfo();
+
+		DescriptorWrites[1].dstSet = DescriptorSet.get();
+		DescriptorWrites[1].dstBinding = 1;
+		DescriptorWrites[1].dstArrayElement = 0;
+		DescriptorWrites[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		DescriptorWrites[1].descriptorCount = 1;
+		DescriptorWrites[1].pImageInfo = &imageInfo;
+
 		Context->GetDevice().updateDescriptorSets(DescriptorWrites, nullptr);
 
 		//END DESCRIPTOR SET AND DESCRIPTOR SET LAYOUT SETUP
