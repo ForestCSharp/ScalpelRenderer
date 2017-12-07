@@ -245,7 +245,10 @@ void VulkanContext::CreateDeviceAndQueues()
 				std::cout << "Using Device with Presentation Queue Support:"  << PhysicalDeviceProperties.deviceName <<  " | QueueIndex: "<< i << std::endl;
 			}
 
-			if (GraphicsQueueIndex != -1 && PresentQueueIndex != -1)
+            vk::PhysicalDeviceFeatures PhysDeviceFeatures;
+            CurrPhysicalDevice.getFeatures(&PhysDeviceFeatures);
+
+			if (GraphicsQueueIndex != -1 && PresentQueueIndex != -1 && PhysDeviceFeatures.samplerAnisotropy == VK_TRUE)
 			{
 				//Found the device that supports our needs
 				PhysicalDevice = CurrPhysicalDevice;
@@ -287,6 +290,13 @@ void VulkanContext::CreateDeviceAndQueues()
 
     DeviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
     DeviceCreateInfo.enabledExtensionCount = static_cast<uint32_t> (deviceExtensions.size());
+    
+    //Physical Device features we require 
+    //TODO: There is a duplicate of this struct when checking phys devices, should be shared
+    vk::PhysicalDeviceFeatures DeviceFeatures = {};
+    DeviceFeatures.samplerAnisotropy = VK_TRUE;
+    DeviceCreateInfo.pEnabledFeatures = &DeviceFeatures;
+
     Device = PhysicalDevice.createDevice(DeviceCreateInfo, nullptr);
 
     GraphicsQueue = Device.getQueue(GraphicsQueueIndex, 0);
