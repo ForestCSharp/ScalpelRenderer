@@ -9,6 +9,7 @@ struct Vertex
 {
 	glm::vec2 pos;
 	glm::vec3 color;
+	glm::vec2 texCoord;
 
 	static std::vector<vk::VertexInputBindingDescription> GetBindingDescriptions()
 	{
@@ -25,7 +26,7 @@ struct Vertex
 	static std::vector<vk::VertexInputAttributeDescription> GetAttributeDescriptions()
 	{
 		std::vector<vk::VertexInputAttributeDescription> Descriptions;		
-		Descriptions.resize(2);
+		Descriptions.resize(3);
 
 		Descriptions[0].binding = 0;
 		Descriptions[0].location = 0;
@@ -36,16 +37,20 @@ struct Vertex
 		Descriptions[1].location = 1;
 		Descriptions[1].format = vk::Format::eR32G32B32Sfloat;
 		Descriptions[1].offset = offsetof(Vertex, color);
-
+		
+		Descriptions[2].binding = 0;
+        Descriptions[2].location = 2;
+        Descriptions[2].format = vk::Format::eR32G32Sfloat;
+        Descriptions[2].offset = offsetof(Vertex, texCoord);
 		return Descriptions;
 	}
 };
 
 const std::vector<Vertex> vertices = {
-    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-    {{-0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}}
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
 };
 
 const std::vector<uint16_t> indices = {
