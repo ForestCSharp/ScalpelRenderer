@@ -21,7 +21,7 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory (${LIB_DIRECTORY}/glfw)
 
 #Include Directories
-include_directories(${SCALPEL_SOURCE_DIR} ${GLM_INCLUDE_DIR} ${STB_INCLUDE_DIR} ${VULKAN_INCLUDE_DIR})
+include_directories(${SCALPEL_SOURCE_DIR} ${GLM_INCLUDE_DIR} ${STB_INCLUDE_DIR})
 
 #Add Source Files to our project Files
 file(GLOB_RECURSE SCALPEL_SOURCE_FILES
@@ -47,3 +47,13 @@ target_link_libraries(Scalpel ${OPENGL_LIBRARIES})
 #Renderer Library
 add_subdirectory (${CMAKE_CURRENT_SOURCE_DIR}/Src/Renderer)
 target_link_libraries(Scalpel ScalpelRenderer)
+
+#Find and Link With Vulkan
+if (WIN32)
+    include_directories($ENV{VK_SDK_PATH}/Include
+                        $ENV{VULKAN_SDK}/Include)
+else()
+    include_directories($ENV{VK_SDK_PATH}/x86_64/include
+                        $ENV{VULKAN_SDK}/include
+                        $ENV{VULKAN_SDK}/x86_64/include)
+endif()
