@@ -17,6 +17,8 @@
 
 #include <GLFW\glfw3.h>
 
+#define VULKAN_HPP_NO_EXCEPTIONS
+
 int main(int, char**)
 {
 	// Setup window
@@ -70,6 +72,8 @@ int main(int, char**)
 
 		VulkanUniform UniformBuffer(sizeof(UniformBufferObject));
 
+		glm::vec3 CameraPosition(2.0f, 2.0f, 2.0f);
+
 		auto UpdateUniformData = [&] (VulkanUniform& Uniform) 
 		{
 			static auto startTime = std::chrono::high_resolution_clock::now();
@@ -79,7 +83,7 @@ int main(int, char**)
 
 			UniformBufferObject Ubo;
 			Ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-			Ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			Ubo.view = glm::lookAt(CameraPosition, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 			Ubo.proj =  glm::perspective(glm::radians(45.0f), Swapchain.GetExtent().width / (float) Swapchain.GetExtent().height, 0.1f, 10.0f);
 			Ubo.proj[1][1] *= -1;
 
@@ -240,7 +244,7 @@ int main(int, char**)
 				BeginInfo.renderArea.offset = {0,0};
 				BeginInfo.renderArea.extent = Swapchain.GetExtent();
 				
-				vk::ClearColorValue ClearColor(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
+				vk::ClearColorValue ClearColor(std::array<float, 4>{0.39f, 0.58f, 0.93f, 1.0f});
 				vk::ClearDepthStencilValue ClearDepth(1.0f, 0);
 				std::vector<vk::ClearValue> ClearValues = {ClearColor, ClearDepth};
 				
@@ -272,9 +276,28 @@ int main(int, char**)
 		// Main loop
 		while (!glfwWindowShouldClose(window))
 		{
+			glfwPollEvents();
+
+			int w_state = glfwGetKey(window, GLFW_KEY_W);
+			if (w_state == GLFW_PRESS)
+			{
+				CameraPosition += glm::vec3(0, -0.001, 0);
+			}
+			int s_state = glfwGetKey(window, GLFW_KEY_S);
+			if (s_state == GLFW_PRESS)
+			{
+				CameraPosition += glm::vec3(0, 0.001, 0);
+			}
+
 			//Window Resizing Logic
 			glfwGetWindowSize(window, &NewWidth, &NewHeight);
-			if (NewWidth != Width || NewHeight != Height)
+
+			UpdateUniformData(UniformBuffer);
+			
+			auto NextImage = Context->GetDevice().acquireNextImageKHR(Swapchain.GetHandle(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphore.get(), vk::Fence());
+			uint32_t ImageIndex = NextImage.value;
+
+			if ( NextImage.result == vk::Result::eErrorOutOfDateKHR || NextImage.result == vk::Result::eErrorIncompatibleDisplayKHR || NewWidth != Width || NewHeight != Height)
 			{
 				Context->GetDevice().waitIdle();
 
@@ -293,12 +316,6 @@ int main(int, char**)
 				Width = NewWidth;
 				Height = NewHeight;
 			}
-
-			UpdateUniformData(UniformBuffer);
-
-			glfwPollEvents();
-
-			uint32_t ImageIndex = Context->GetDevice().acquireNextImageKHR(Swapchain.GetHandle(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphore.get(), vk::Fence()).value;
 
 			vk::SubmitInfo SubmitInfo;
 			vk::Semaphore WaitSemaphores[] = {ImageAvailableSemaphore.get()};

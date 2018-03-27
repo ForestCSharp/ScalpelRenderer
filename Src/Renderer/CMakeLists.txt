@@ -40,7 +40,7 @@ else()
 endif()
 
 if (WIN32)
-    target_link_libraries(ScalpelRenderer $ENV{VULKAN_SDK}/Lib/vulkan-1.lib)
+    target_link_libraries(ScalpelRenderer $ENV{VULKAN_SDK}/Lib32/vulkan-1.lib)
 else()
     target_link_libraries(ScalpelRenderer vulkan)
 endif()

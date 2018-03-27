@@ -199,7 +199,7 @@ void VulkanContext::SetupDebugCallback()
         (VERBOSE_VALIDATION & (VK_DEBUG_REPORT_INFORMATION_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)); //Verbose Validation Bits
     createInfo.pfnCallback = debugCallback;
 
-    if (CreateDebugReportCallbackEXT(Instance, &createInfo, nullptr, &callback) != VK_SUCCESS) 
+    if (CreateDebugReportCallbackEXT((VkInstance)Instance, &createInfo, nullptr, &callback) != VK_SUCCESS) 
     {
         throw std::runtime_error("failed to set up debug callback!");
     }
@@ -210,7 +210,7 @@ void VulkanContext::SetupDebugCallback()
 void VulkanContext::RemoveDebugCallback()
 {
 #if ENABLE_VK_VALIDATION
-    DestroyDebugReportCallbackEXT(Instance, callback, nullptr);
+    DestroyDebugReportCallbackEXT((VkInstance)Instance, callback, nullptr);
 #endif
 }
 
@@ -229,7 +229,7 @@ void VulkanContext::CreateDeviceAndQueues()
 		std::vector<vk::QueueFamilyProperties> QueueFamilyProperties = CurrPhysicalDevice.getQueueFamilyProperties();
 
         //TODO: Check device for needed features here before committing to it (64 bit fp ops, texture compression, etc.)
-        for (int i = 0; i < QueueFamilyProperties.size(); ++i)
+        for (size_t i = 0; i < QueueFamilyProperties.size(); ++i)
         {
 			//Need queue that supports graphics and presnetation
             if (QueueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics)
@@ -315,12 +315,12 @@ void VulkanContext::CreateCommandPool()
 void VulkanContext::CreateGLFWSurface(GLFWwindow* window)
 {
     VkSurfaceKHR tmp;
-    if (glfwCreateWindowSurface(VulkanContext::Get()->GetInstance(), window, nullptr, &tmp) != VK_SUCCESS) 
+    if (glfwCreateWindowSurface((VkInstance)VulkanContext::Get()->GetInstance(), window, nullptr, &tmp) != VK_SUCCESS) 
     {
         throw std::runtime_error("failed to create window surface!");
     }
 
-    Surface = tmp;
+    Surface = (vk::SurfaceKHR)tmp;
 }
 
 uint32_t VulkanContext::FindMemoryType(uint32_t TypeFilter, vk::MemoryPropertyFlags Properties)
