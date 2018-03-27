@@ -1,0 +1,7 @@
+Exception: STATUS_ACCESS_VIOLATION at eip=6405D87C
+eax=00880000 ebx=642A1BCC ecx=00000000 edx=00030008 esi=0000001F edi=642A1BAC
+ebp=FFFFFFFF esp=0081BEC0 program=C:\Program Files (x86)\Git\usr\bin\bash.exe, pid 11448, thread main
+cs=0023 ds=002B es=002B fs=0053 gs=002B ss=002B
+Stack trace:
+Frame     Function  Args
+End of stack trace

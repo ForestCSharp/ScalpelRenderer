@@ -72,7 +72,9 @@ int main(int, char**)
 
 		VulkanUniform UniformBuffer(sizeof(UniformBufferObject));
 
-		glm::vec3 CameraPosition(2.0f, 2.0f, 2.0f);
+		glm::vec3 CameraPosition(0.0f, 2.0f, 2.0f);
+		glm::vec3 Target(0,0,0);
+		const glm::vec3 UpVector(0,0,1);
 
 		auto UpdateUniformData = [&] (VulkanUniform& Uniform) 
 		{
@@ -82,8 +84,8 @@ int main(int, char**)
 			float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
 
 			UniformBufferObject Ubo;
-			Ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-			Ubo.view = glm::lookAt(CameraPosition, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			//Ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			Ubo.view = glm::lookAt(CameraPosition, Target, UpVector);
 			Ubo.proj =  glm::perspective(glm::radians(45.0f), Swapchain.GetExtent().width / (float) Swapchain.GetExtent().height, 0.1f, 10.0f);
 			Ubo.proj[1][1] *= -1;
 
@@ -278,15 +280,33 @@ int main(int, char**)
 		{
 			glfwPollEvents();
 
+			const float MoveSpeed = 0.001f;
+			glm::vec3 CamForward = glm::normalize(Target - CameraPosition) * MoveSpeed;
+			glm::vec3 CamRight   = glm::normalize(glm::cross(CamForward, UpVector)) * MoveSpeed;
+			
 			int w_state = glfwGetKey(window, GLFW_KEY_W);
 			if (w_state == GLFW_PRESS)
 			{
-				CameraPosition += glm::vec3(0, -0.001, 0);
+				CameraPosition += CamForward;
+				Target += CamForward;
 			}
 			int s_state = glfwGetKey(window, GLFW_KEY_S);
 			if (s_state == GLFW_PRESS)
 			{
-				CameraPosition += glm::vec3(0, 0.001, 0);
+				CameraPosition -= CamForward;
+				Target -= CamForward;
+			}
+			int a_state = glfwGetKey(window, GLFW_KEY_A);
+			if (a_state == GLFW_PRESS)
+			{
+				CameraPosition -= CamRight;
+				Target -= CamRight;
+			}
+			int d_state = glfwGetKey(window, GLFW_KEY_D);
+			if (d_state == GLFW_PRESS)
+			{
+				CameraPosition += CamRight;
+				Target += CamRight;
 			}
 
 			//Window Resizing Logic
