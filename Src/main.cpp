@@ -3,6 +3,7 @@
 #include <iostream>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 #include <memory>
 #include <chrono>
 
@@ -84,15 +85,14 @@ int main(int, char**)
 			float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
 
 			UniformBufferObject Ubo;
-			//Ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			Ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 			Ubo.view = glm::lookAt(CameraPosition, Target, UpVector);
-			Ubo.proj =  glm::perspective(glm::radians(45.0f), Swapchain.GetExtent().width / (float) Swapchain.GetExtent().height, 0.1f, 10.0f);
+			Ubo.proj =  glm::perspective(glm::radians(45.0f), Swapchain.GetExtent().width / (float) Swapchain.GetExtent().height, 0.001f, 10000.0f);
 			Ubo.proj[1][1] *= -1;
 
 			Uniform.UpdateUniformData(&Ubo, sizeof(UniformBufferObject));
 		};
 		UpdateUniformData(UniformBuffer);
-
 
 		VulkanGraphicsPipeline Pipeline;
 
@@ -273,16 +273,29 @@ int main(int, char**)
 
 		int Width, Height;
 		glfwGetWindowSize(window, &Width, &Height);
-		int NewWidth, NewHeight;
 
 		// Main loop
+		double LastTime = 0.0;
+		double deltaSeconds = 0.0;
+		
+		double LastMouseX, LastMouseY;
+		glfwGetCursorPos(window, &LastMouseX, &LastMouseY);
+
+		static int i = 0;
+
 		while (!glfwWindowShouldClose(window))
 		{
 			glfwPollEvents();
 
-			const float MoveSpeed = 0.001f;
-			glm::vec3 CamForward = glm::normalize(Target - CameraPosition) * MoveSpeed;
-			glm::vec3 CamRight   = glm::normalize(glm::cross(CamForward, UpVector)) * MoveSpeed;
+			//Calculate deltaSeconds
+			double CurrentTime = glfwGetTime();
+			deltaSeconds = CurrentTime - LastTime;
+			LastTime = CurrentTime;
+
+			const float MoveSpeed = 3.0f;
+			glm::vec3 CamForward = glm::normalize(Target - CameraPosition) * MoveSpeed * (float)deltaSeconds;
+			glm::vec3 CamRight   = glm::normalize(glm::cross(CamForward, UpVector)) * MoveSpeed * (float)deltaSeconds;
+			glm::vec3 WorldUp    = UpVector * MoveSpeed * (float)deltaSeconds;
 			
 			int w_state = glfwGetKey(window, GLFW_KEY_W);
 			if (w_state == GLFW_PRESS)
@@ -308,9 +321,42 @@ int main(int, char**)
 				CameraPosition += CamRight;
 				Target += CamRight;
 			}
+			int q_state = glfwGetKey(window, GLFW_KEY_Q);
+			if (q_state == GLFW_PRESS)
+			{
+				CameraPosition -= WorldUp;
+				Target -= WorldUp;
+			}
+			int e_state = glfwGetKey(window, GLFW_KEY_E);
+			if (e_state == GLFW_PRESS)
+			{
+				CameraPosition += WorldUp;
+				Target += WorldUp;
+			}
+
+			double MouseX, MouseY;
+			glfwGetCursorPos(window, &MouseX, &MouseY);
+
+			double MouseDeltaX = (MouseX - LastMouseX) * deltaSeconds;
+			double MouseDeltaY = (MouseY - LastMouseY) * deltaSeconds;
+
+			glm::vec3 CamToTarget = glm::normalize(Target - CameraPosition);
+			//CamToTarget = glm::rotateZ<glm::vec3>(CamToTarget, MouseDeltaX * 10.0f);
+
+			Target = CameraPosition + CamToTarget;
+
+			LastMouseX = MouseX;
+			LastMouseY = MouseY;
 
 			//Window Resizing Logic
+			int NewWidth, NewHeight;
 			glfwGetWindowSize(window, &NewWidth, &NewHeight);
+
+			//If window was minimized, don't render
+			if (NewWidth == 0 || NewHeight == 0)
+			{
+				continue;
+			}
 
 			UpdateUniformData(UniformBuffer);
 			
