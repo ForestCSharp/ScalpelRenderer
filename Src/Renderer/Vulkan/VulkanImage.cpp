@@ -215,3 +215,20 @@ void VulkanImage::CreateSampler()
     vk::Device Device = VulkanContext::Get()->GetDevice();
     ImageSampler = Device.createSamplerUnique(SamplerInfo);
 }
+
+vk::DescriptorImageInfo VulkanImage::GetDescriptorInfo()
+{
+    if (!bDescriptorInfoBuilt)
+    {
+        CreateDescriptorInfo();
+    }
+
+    return DescriptorImageInfo;
+}
+
+void VulkanImage::CreateDescriptorInfo()
+{
+    DescriptorImageInfo.imageLayout = ImageLayout;
+    DescriptorImageInfo.imageView = GetImageView();
+    DescriptorImageInfo.sampler = GetSampler();
+}

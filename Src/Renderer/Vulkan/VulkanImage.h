@@ -29,6 +29,10 @@ public:
     vk::Sampler GetSampler();
     void CreateSampler();
 
+    //Optional Descriptor Info
+    vk::DescriptorImageInfo GetDescriptorInfo();
+    void CreateDescriptorInfo();
+
 protected:
 
     vk::UniqueImage Image;
@@ -43,4 +47,8 @@ protected:
     //Optional Sampler
     vk::UniqueSampler ImageSampler;
     bool bSamplerBuilt = false;
+
+    //Optional Descritor Info
+    vk::DescriptorImageInfo DescriptorImageInfo;
+    bool bDescriptorInfoBuilt = false;
 };

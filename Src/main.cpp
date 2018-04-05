@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
+#define GLM_EXT_INCLUDED
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/rotate_vector.hpp>
@@ -19,6 +20,80 @@
 #include <GLFW\glfw3.h>
 
 #define VULKAN_HPP_NO_EXCEPTIONS
+
+void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& MouseDeltaX, const float& MouseDeltaY, glm::vec3& CameraPosition, glm::vec3& Target)
+{
+	const float MoveSpeed = 3.0f;
+	const glm::vec3 UpVector(0,0,1);
+	glm::vec3 CamForward = glm::normalize(Target - CameraPosition) * MoveSpeed * deltaSeconds;
+	glm::vec3 CamRight   = glm::normalize(glm::cross(CamForward, UpVector)) * MoveSpeed * deltaSeconds;
+	glm::vec3 WorldUp    = UpVector * MoveSpeed * deltaSeconds;
+	
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	{
+		CameraPosition += CamForward;
+		Target += CamForward;
+	}
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	{
+		CameraPosition -= CamForward;
+		Target -= CamForward;
+	}
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	{
+		CameraPosition -= CamRight;
+		Target -= CamRight;
+	}
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	{
+		CameraPosition += CamRight;
+		Target += CamRight;
+	}
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+	{
+		CameraPosition -= WorldUp;
+		Target -= WorldUp;
+	}
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+	{
+		CameraPosition += WorldUp;
+		Target += WorldUp;
+	}
+
+	
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+	{
+		
+	}
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+	{
+
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+	{
+
+	}
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+	{
+
+	}
+
+	//Camera Mouse Rotation
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+	{
+		glm::vec3 CamToTarget = glm::normalize(Target - CameraPosition);
+
+		//Yaw
+		CamToTarget = glm::mat3(glm::rotate(-10.0f * MouseDeltaX, WorldUp)) * CamToTarget;
+
+		//Pitch
+		CamToTarget = glm::mat3(glm::rotate(-5.0f * MouseDeltaY, CamRight)) * CamToTarget;
+
+		Target = CameraPosition + CamToTarget;
+	}
+}
+
+//TODO: Non-relative File path for storing resources
 
 int main(int, char**)
 {
@@ -191,12 +266,6 @@ int main(int, char**)
 		vk::UniqueDescriptorSet& DescriptorSet = DescriptorSets[0]; //Just for ease of access later
 
 		//Actually reference our image view and sampler
-		//TODO: Move to VulkanImage
-		vk::DescriptorImageInfo imageInfo = {};
-		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		imageInfo.imageView = ImageView;
-		imageInfo.sampler = ImageSampler;
-
 		std::array<vk::WriteDescriptorSet,2> DescriptorWrites;
 		DescriptorWrites[0].dstSet = DescriptorSet.get();
 		DescriptorWrites[0].dstBinding = 0;
@@ -210,7 +279,7 @@ int main(int, char**)
 		DescriptorWrites[1].dstArrayElement = 0;
 		DescriptorWrites[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		DescriptorWrites[1].descriptorCount = 1;
-		DescriptorWrites[1].pImageInfo = &imageInfo;
+		DescriptorWrites[1].pImageInfo = &Image.GetDescriptorInfo();
 
 		Context->GetDevice().updateDescriptorSets(DescriptorWrites, nullptr);
 
@@ -276,7 +345,7 @@ int main(int, char**)
 
 		// Main loop
 		double LastTime = 0.0;
-		double deltaSeconds = 0.0;
+		float deltaSeconds = 0.0;
 		
 		double LastMouseX, LastMouseY;
 		glfwGetCursorPos(window, &LastMouseX, &LastMouseY);
@@ -289,50 +358,8 @@ int main(int, char**)
 
 			//Calculate deltaSeconds
 			double CurrentTime = glfwGetTime();
-			deltaSeconds = CurrentTime - LastTime;
+			deltaSeconds = (float)(CurrentTime - LastTime);
 			LastTime = CurrentTime;
-
-			const float MoveSpeed = 3.0f;
-			glm::vec3 CamForward = glm::normalize(Target - CameraPosition) * MoveSpeed * (float)deltaSeconds;
-			glm::vec3 CamRight   = glm::normalize(glm::cross(CamForward, UpVector)) * MoveSpeed * (float)deltaSeconds;
-			glm::vec3 WorldUp    = UpVector * MoveSpeed * (float)deltaSeconds;
-			
-			int w_state = glfwGetKey(window, GLFW_KEY_W);
-			if (w_state == GLFW_PRESS)
-			{
-				CameraPosition += CamForward;
-				Target += CamForward;
-			}
-			int s_state = glfwGetKey(window, GLFW_KEY_S);
-			if (s_state == GLFW_PRESS)
-			{
-				CameraPosition -= CamForward;
-				Target -= CamForward;
-			}
-			int a_state = glfwGetKey(window, GLFW_KEY_A);
-			if (a_state == GLFW_PRESS)
-			{
-				CameraPosition -= CamRight;
-				Target -= CamRight;
-			}
-			int d_state = glfwGetKey(window, GLFW_KEY_D);
-			if (d_state == GLFW_PRESS)
-			{
-				CameraPosition += CamRight;
-				Target += CamRight;
-			}
-			int q_state = glfwGetKey(window, GLFW_KEY_Q);
-			if (q_state == GLFW_PRESS)
-			{
-				CameraPosition -= WorldUp;
-				Target -= WorldUp;
-			}
-			int e_state = glfwGetKey(window, GLFW_KEY_E);
-			if (e_state == GLFW_PRESS)
-			{
-				CameraPosition += WorldUp;
-				Target += WorldUp;
-			}
 
 			double MouseX, MouseY;
 			glfwGetCursorPos(window, &MouseX, &MouseY);
@@ -340,11 +367,8 @@ int main(int, char**)
 			double MouseDeltaX = (MouseX - LastMouseX) * deltaSeconds;
 			double MouseDeltaY = (MouseY - LastMouseY) * deltaSeconds;
 
-			glm::vec3 CamToTarget = glm::normalize(Target - CameraPosition);
-			//CamToTarget = glm::rotateZ<glm::vec3>(CamToTarget, MouseDeltaX * 10.0f);
-
-			Target = CameraPosition + CamToTarget;
-
+			HandleInput(window, deltaSeconds, (float)MouseDeltaX, (float)MouseDeltaY, CameraPosition, Target);
+			
 			LastMouseX = MouseX;
 			LastMouseY = MouseY;
 
