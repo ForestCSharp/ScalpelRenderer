@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
-#define GLM_EXT_INCLUDED
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/rotate_vector.hpp>
@@ -23,11 +23,13 @@
 
 void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& MouseDeltaX, const float& MouseDeltaY, glm::vec3& CameraPosition, glm::vec3& Target)
 {
-	const float MoveSpeed = 3.0f;
-	const glm::vec3 UpVector(0,0,1);
-	glm::vec3 CamForward = glm::normalize(Target - CameraPosition) * MoveSpeed * deltaSeconds;
-	glm::vec3 CamRight   = glm::normalize(glm::cross(CamForward, UpVector)) * MoveSpeed * deltaSeconds;
-	glm::vec3 WorldUp    = UpVector * MoveSpeed * deltaSeconds;
+	const float MoveSpeed = 3.0f * deltaSeconds;
+	
+	const glm::vec3 WorldUp(0,0,1);
+
+	glm::vec3 CamForward = glm::normalize(Target - CameraPosition) * MoveSpeed;
+	glm::vec3 CamRight   = glm::normalize(glm::cross(CamForward, WorldUp)) * MoveSpeed;
+	glm::vec3 CamUp      = glm::normalize(glm::cross(CamRight, CamForward)) * MoveSpeed;
 	
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
@@ -51,13 +53,13 @@ void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& Mou
 	}
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 	{
-		CameraPosition -= WorldUp;
-		Target -= WorldUp;
+		CameraPosition -= CamUp;
+		Target -= CamUp;
 	}
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 	{
-		CameraPosition += WorldUp;
-		Target += WorldUp;
+		CameraPosition += CamUp;
+		Target += CamUp;
 	}
 
 	
@@ -84,7 +86,7 @@ void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& Mou
 		glm::vec3 CamToTarget = glm::normalize(Target - CameraPosition);
 
 		//Yaw
-		CamToTarget = glm::mat3(glm::rotate(-10.0f * MouseDeltaX, WorldUp)) * CamToTarget;
+		CamToTarget = glm::mat3(glm::rotate(-10.0f * MouseDeltaX, CamUp)) * CamToTarget;
 
 		//Pitch
 		CamToTarget = glm::mat3(glm::rotate(-5.0f * MouseDeltaY, CamRight)) * CamToTarget;
@@ -191,7 +193,7 @@ int main(int, char**)
 		Pipeline.Rasterizer.rasterizerDiscardEnable = VK_FALSE;
 		Pipeline.Rasterizer.polygonMode = vk::PolygonMode::eFill;
 		Pipeline.Rasterizer.lineWidth = 1.0f;
-		Pipeline.Rasterizer.cullMode = vk::CullModeFlagBits::eBack;
+		Pipeline.Rasterizer.cullMode = vk::CullModeFlagBits::eNone;
 		Pipeline.Rasterizer.frontFace = vk::FrontFace::eCounterClockwise;
 		Pipeline.Rasterizer.depthBiasEnable = VK_FALSE;
 
