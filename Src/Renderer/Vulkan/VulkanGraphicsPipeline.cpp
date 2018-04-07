@@ -1,9 +1,11 @@
 #include "VulkanGraphicsPipeline.h"
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include "VulkanContext.h"
 #include "VulkanRenderPass.h"
+#include "spirv_reflect.h"
 
 VulkanGraphicsPipeline::VulkanGraphicsPipeline()
 {
@@ -14,20 +16,78 @@ VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
 {
 }
 
-void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass)
+void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const std::string& VertexShader, const std::string& FragmentShader)
 {	
-	//TODO: Shader path member variables
 	//TODO: Add additional shader stages
 
 	vk::GraphicsPipelineCreateInfo CreateInfo;
 
-	vk::ShaderModule VertModule = LoadShaderFromFile("shaders/vert.spv");
+	std::vector<char> VertexSpirV = LoadShaderFromFile(VertexShader);
+	vk::ShaderModule VertModule = CreateShaderModule(VertexSpirV);
 	vk::PipelineShaderStageCreateInfo VertStageCreateInfo;
 	VertStageCreateInfo.stage = vk::ShaderStageFlagBits::eVertex;
 	VertStageCreateInfo.module = VertModule;
 	VertStageCreateInfo.pName = "main";
 
-	vk::ShaderModule FragModule = LoadShaderFromFile("shaders/frag.spv");
+	//Use SpirV_Reflect to build up our vertex input information
+	SpvReflectShaderModule VertexShaderReflection;
+	spvReflectCreateShaderModule(VertexSpirV.size(), VertexSpirV.data(), &VertexShaderReflection);
+
+	uint32_t VertexInputCount = 0;
+	spvReflectEnumerateInputVariables(&VertexShaderReflection, &VertexInputCount, nullptr);
+
+	if (VertexInputCount > 0)
+	{
+		std::vector<SpvReflectInterfaceVariable*> VertexInputs(VertexInputCount);
+		spvReflectEnumerateInputVariables(&VertexShaderReflection, &VertexInputCount, VertexInputs.data());
+
+		//Sort by location so we can compute offsets below TODO: will need to sort by binding then location to handle multiple vertex buffers
+		std::sort(std::begin(VertexInputs), std::end(VertexInputs),
+		[](const SpvReflectInterfaceVariable* a, const SpvReflectInterfaceVariable* b) 
+		{
+			return a->location < b->location; 
+		});
+
+
+		uint32_t CurrentOffset = 0;
+
+		//Individual elements of our vertices
+		std::vector<vk::VertexInputAttributeDescription> InputAttributes;
+		for (auto& Input : VertexInputs)
+		{
+			vk::VertexInputAttributeDescription Attribute;
+			Attribute.binding = 0; //TODO: Allow multiple vertex buffer bindings
+			Attribute.location = Input->location;
+			Attribute.format   = (vk::Format)Input->format;
+			Attribute.offset = CurrentOffset;
+
+			InputAttributes.push_back(Attribute);
+
+			std::cout << Input->name << std::endl;
+			std::cout << Input->location << std::endl;
+			std::cout << to_string(Attribute.format) << std::endl;
+			std::cout << CurrentOffset << std::endl;
+			std::cout << std::endl;
+
+			CurrentOffset += spv_reflect::FormatSize((VkFormat) Attribute.format);		
+		}
+
+		//Represents one type of Vertex for an input vertex buffer
+		vk::VertexInputBindingDescription VertexBinding;
+		VertexBinding.binding = 0; //TODO: Allow multiple vertex buffer bindings
+		VertexBinding.stride = CurrentOffset;
+		VertexBinding.inputRate = vk::VertexInputRate::eVertex;
+
+		std::vector<vk::VertexInputBindingDescription> VertexBindingArray;
+		VertexBindingArray.push_back(VertexBinding);
+
+		SetVertexInputBindings(VertexBindingArray, InputAttributes);
+	}
+
+	spvReflectDestroyShaderModule(&VertexShaderReflection);
+
+	std::vector<char> FragmentSpirV = LoadShaderFromFile(FragmentShader);
+	vk::ShaderModule FragModule = CreateShaderModule(FragmentSpirV);
 	vk::PipelineShaderStageCreateInfo FragStageCreateInfo;
 	FragStageCreateInfo.stage = vk::ShaderStageFlagBits::eFragment;
 	FragStageCreateInfo.module = FragModule;
@@ -76,7 +136,7 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass)
 	VulkanContext::Get()->GetDevice().destroyShaderModule(FragModule);
 }
 
-vk::ShaderModule VulkanGraphicsPipeline::LoadShaderFromFile(const std::string& filename)
+std::vector<char> VulkanGraphicsPipeline::LoadShaderFromFile(const std::string& filename)
 {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -94,11 +154,14 @@ vk::ShaderModule VulkanGraphicsPipeline::LoadShaderFromFile(const std::string& f
 
 	file.close();
 
-	//now we use our buffer to build our shader module
+	return code;
+}
 
+vk::ShaderModule VulkanGraphicsPipeline::CreateShaderModule(std::vector<char> spvCode)
+{
 	vk::ShaderModuleCreateInfo CreateInfo;
-	CreateInfo.codeSize = code.size();
-	CreateInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+	CreateInfo.codeSize = spvCode.size();
+	CreateInfo.pCode = reinterpret_cast<const uint32_t*>(spvCode.data());
 
 	return VulkanContext::Get()->GetDevice().createShaderModule(CreateInfo);
 }

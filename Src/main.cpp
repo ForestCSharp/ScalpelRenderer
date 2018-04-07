@@ -24,11 +24,9 @@
 void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& MouseDeltaX, const float& MouseDeltaY, glm::vec3& CameraPosition, glm::vec3& Target)
 {
 	const float MoveSpeed = 3.0f * deltaSeconds;
-	
-	const glm::vec3 WorldUp(0,0,1);
 
 	glm::vec3 CamForward = glm::normalize(Target - CameraPosition) * MoveSpeed;
-	glm::vec3 CamRight   = glm::normalize(glm::cross(CamForward, WorldUp)) * MoveSpeed;
+	glm::vec3 CamRight   = glm::normalize(glm::cross(CamForward, glm::vec3(0,0,1))) * MoveSpeed;
 	glm::vec3 CamUp      = glm::normalize(glm::cross(CamRight, CamForward)) * MoveSpeed;
 	
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -86,10 +84,10 @@ void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& Mou
 		glm::vec3 CamToTarget = glm::normalize(Target - CameraPosition);
 
 		//Yaw
-		CamToTarget = glm::mat3(glm::rotate(-10.0f * MouseDeltaX, CamUp)) * CamToTarget;
+		CamToTarget = glm::mat3(glm::rotate(-7.0f * MouseDeltaX, CamUp)) * CamToTarget;
 
 		//Pitch
-		CamToTarget = glm::mat3(glm::rotate(-5.0f * MouseDeltaY, CamRight)) * CamToTarget;
+		CamToTarget = glm::mat3(glm::rotate(-7.0f * MouseDeltaY, CamRight)) * CamToTarget;
 
 		Target = CameraPosition + CamToTarget;
 	}
@@ -174,8 +172,6 @@ int main(int, char**)
 		VulkanGraphicsPipeline Pipeline;
 
 		/* ... Pipeline Setup Here ... */
-		Pipeline.SetVertexInputBindings(Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions());
-		
 		Pipeline.InputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
 		Pipeline.InputAssembly.primitiveRestartEnable = VK_FALSE;
 
@@ -297,7 +293,7 @@ int main(int, char**)
 		//Pipeline.DynamicStates.push_back(vk::DynamicState::eViewport);
 
 		/* ... End Pipeline Setup ... */
-		Pipeline.BuildPipeline(RenderPass);
+		Pipeline.BuildPipeline(RenderPass, "shaders/vert.spv", "shaders/frag.spv");
 
 		std::vector<VulkanCommandBuffer> CommandBuffers;
 		CommandBuffers.resize(RenderPass.GetFramebuffers().size());
@@ -400,7 +396,7 @@ int main(int, char**)
 				Pipeline.Viewport.width = (float) Swapchain.GetExtent().width;
 				Pipeline.Viewport.height = (float) Swapchain.GetExtent().height;
 				Pipeline.Scissor.extent = Swapchain.GetExtent();
-				Pipeline.BuildPipeline(RenderPass);
+				Pipeline.BuildPipeline(RenderPass, "shaders/vert.spv", "shaders/frag.spv");
 
 				//Recall this lambda
 				BuildDrawingCommandBuffers();

@@ -5,45 +5,12 @@
 #include <vector>
 
 //TODO: Move this. Buffer should only know about its data, shouldn't care about contents
+//NOTE see SpirV_Reflect code in VulkanGraphicsPipeline
 struct Vertex
 {
 	glm::vec3 pos;
 	glm::vec3 color;
 	glm::vec2 texCoord;
-
-	static std::vector<vk::VertexInputBindingDescription> GetBindingDescriptions()
-	{
-		std::vector<vk::VertexInputBindingDescription> Descriptions;
-		Descriptions.resize(1);
-
-		Descriptions[0].binding = 0;
-		Descriptions[0].stride = sizeof(Vertex);
-		Descriptions[0].inputRate = vk::VertexInputRate::eVertex;
-
-		return Descriptions;
-	}
-
-	static std::vector<vk::VertexInputAttributeDescription> GetAttributeDescriptions()
-	{
-		std::vector<vk::VertexInputAttributeDescription> Descriptions;		
-		Descriptions.resize(3);
-
-		Descriptions[0].binding = 0;
-		Descriptions[0].location = 0;
-		Descriptions[0].format = vk::Format::eR32G32B32Sfloat;
-		Descriptions[0].offset = offsetof(Vertex, pos);
-
-		Descriptions[1].binding = 0;
-		Descriptions[1].location = 1;
-		Descriptions[1].format = vk::Format::eR32G32B32Sfloat;
-		Descriptions[1].offset = offsetof(Vertex, color);
-		
-		Descriptions[2].binding = 0;
-        Descriptions[2].location = 2;
-        Descriptions[2].format = vk::Format::eR32G32Sfloat;
-        Descriptions[2].offset = offsetof(Vertex, texCoord);
-		return Descriptions;
-	}
 };
 
 const std::vector<Vertex> vertices = {
