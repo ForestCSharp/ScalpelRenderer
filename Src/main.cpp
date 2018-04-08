@@ -152,26 +152,24 @@ int main(int, char**)
 		glm::vec3 Target(0,0,0);
 		const glm::vec3 UpVector(0,0,1);
 
-		auto UpdateUniformData = [&] (VulkanUniform& Uniform) 
+		auto UpdateUniformData = [&] (VulkanUniform& Uniform, const float& deltaSeconds)
 		{
-			static auto startTime = std::chrono::high_resolution_clock::now();
-			
-			auto currentTime = std::chrono::high_resolution_clock::now();
-			float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
+			static float TotalTime = 0.0f;
+			TotalTime += deltaSeconds;
 
 			UniformBufferObject Ubo;
-			Ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			Ubo.model = glm::rotate(glm::mat4(1.0f), TotalTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 			Ubo.view = glm::lookAt(CameraPosition, Target, UpVector);
-			Ubo.proj =  glm::perspective(glm::radians(45.0f), Swapchain.GetExtent().width / (float) Swapchain.GetExtent().height, 0.001f, 10000.0f);
+			Ubo.proj =  glm::perspective(glm::radians(60.0f), Swapchain.GetExtent().width / (float) Swapchain.GetExtent().height, 0.001f, 10000.0f);
 			Ubo.proj[1][1] *= -1;
 
 			Uniform.UpdateUniformData(&Ubo, sizeof(UniformBufferObject));
 		};
-		UpdateUniformData(UniformBuffer);
-
-		VulkanGraphicsPipeline Pipeline;
+		UpdateUniformData(UniformBuffer, 0.0f);
 
 		/* ... Pipeline Setup Here ... */
+		VulkanGraphicsPipeline Pipeline;
+
 		Pipeline.InputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
 		Pipeline.InputAssembly.primitiveRestartEnable = VK_FALSE;
 
@@ -210,9 +208,18 @@ int main(int, char**)
         Pipeline.ColorBlending.blendConstants[1] = 0.0f;
         Pipeline.ColorBlending.blendConstants[2] = 0.0f;
 		Pipeline.ColorBlending.blendConstants[3] = 0.0f;
+
+		Pipeline.DepthStencil.depthTestEnable = VK_TRUE;
+		Pipeline.DepthStencil.depthWriteEnable = VK_TRUE;
+		Pipeline.DepthStencil.depthCompareOp = vk::CompareOp::eLess;
+		Pipeline.DepthStencil.minDepthBounds = 0.0f;
+		Pipeline.DepthStencil.maxDepthBounds = 1.0f;
+		Pipeline.DepthStencil.stencilTestEnable = VK_FALSE;
+
+		//Pipeline.DynamicStates.push_back(vk::DynamicState::eViewport);
 		
 		//BEGIN DESCRIPTOR SET AND DESCRIPTOR SET LAYOUT SETUP
-		//TODO: Easy-To-Use interface for Binding Descriptors
+		//TODO: Use Spir-V Reflect in "Build Pipeline to handle these"
 		
 		/* DESC SET BINDINGS */
 		vk::DescriptorSetLayoutBinding UniformLayoutBinding;
@@ -283,15 +290,6 @@ int main(int, char**)
 
 		//END DESCRIPTOR SET AND DESCRIPTOR SET LAYOUT SETUP
 
-		Pipeline.DepthStencil.depthTestEnable = VK_TRUE;
-		Pipeline.DepthStencil.depthWriteEnable = VK_TRUE;
-		Pipeline.DepthStencil.depthCompareOp = vk::CompareOp::eLess;
-		Pipeline.DepthStencil.minDepthBounds = 0.0f;
-		Pipeline.DepthStencil.maxDepthBounds = 1.0f;
-		Pipeline.DepthStencil.stencilTestEnable = VK_FALSE;
-
-		//Pipeline.DynamicStates.push_back(vk::DynamicState::eViewport);
-
 		/* ... End Pipeline Setup ... */
 		Pipeline.BuildPipeline(RenderPass, "shaders/vert.spv", "shaders/frag.spv");
 
@@ -357,6 +355,10 @@ int main(int, char**)
 			//Calculate deltaSeconds
 			double CurrentTime = glfwGetTime();
 			deltaSeconds = (float)(CurrentTime - LastTime);
+
+			// float FPS = 1.0f / deltaSeconds;
+			// std::cout << FPS << std::endl;
+			
 			LastTime = CurrentTime;
 
 			double MouseX, MouseY;
@@ -380,7 +382,7 @@ int main(int, char**)
 				continue;
 			}
 
-			UpdateUniformData(UniformBuffer);
+			UpdateUniformData(UniformBuffer, deltaSeconds);
 			
 			auto NextImage = Context->GetDevice().acquireNextImageKHR(Swapchain.GetHandle(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphore.get(), vk::Fence());
 			uint32_t ImageIndex = NextImage.value;

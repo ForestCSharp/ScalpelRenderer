@@ -1387,5 +1387,9 @@ static uint32_t FormatSize(VkFormat format)
 }
 
 } // namespace spv_reflect
+
+//Quick Function to assert to success of a spvReflect function call
+void SPV_REFLECT_ASSERT(SpvReflectResult Result) { assert(Result == SPV_REFLECT_RESULT_SUCCESS);};
+
 #endif // defined(__cplusplus)
 #endif // SPIRV_REFLECT_H

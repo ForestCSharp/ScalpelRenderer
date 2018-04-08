@@ -31,17 +31,17 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 
 	//Use SpirV_Reflect to build up our vertex input information
 	SpvReflectShaderModule VertexShaderReflection;
-	spvReflectCreateShaderModule(VertexSpirV.size(), VertexSpirV.data(), &VertexShaderReflection);
+	SPV_REFLECT_ASSERT(spvReflectCreateShaderModule(VertexSpirV.size(), VertexSpirV.data(), &VertexShaderReflection));
 
 	uint32_t VertexInputCount = 0;
-	spvReflectEnumerateInputVariables(&VertexShaderReflection, &VertexInputCount, nullptr);
+	SPV_REFLECT_ASSERT(spvReflectEnumerateInputVariables(&VertexShaderReflection, &VertexInputCount, nullptr));
 
 	if (VertexInputCount > 0)
 	{
 		std::vector<SpvReflectInterfaceVariable*> VertexInputs(VertexInputCount);
-		spvReflectEnumerateInputVariables(&VertexShaderReflection, &VertexInputCount, VertexInputs.data());
+		SPV_REFLECT_ASSERT(spvReflectEnumerateInputVariables(&VertexShaderReflection, &VertexInputCount, VertexInputs.data()));
 
-		//Sort by location so we can compute offsets below TODO: will need to sort by binding then location to handle multiple vertex buffers
+		//TODO: will need to sort by binding THEN location to handle multiple vertex buffers
 		std::sort(std::begin(VertexInputs), std::end(VertexInputs),
 		[](const SpvReflectInterfaceVariable* a, const SpvReflectInterfaceVariable* b) 
 		{
@@ -50,6 +50,8 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 
 
 		uint32_t CurrentOffset = 0;
+
+		std::cout << "BEGIN VERTEX INPUT REFLECTION" << std::endl << std::endl;
 
 		//Individual elements of our vertices
 		std::vector<vk::VertexInputAttributeDescription> InputAttributes;
@@ -84,8 +86,6 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 		SetVertexInputBindings(VertexBindingArray, InputAttributes);
 	}
 
-	spvReflectDestroyShaderModule(&VertexShaderReflection);
-
 	std::vector<char> FragmentSpirV = LoadShaderFromFile(FragmentShader);
 	vk::ShaderModule FragModule = CreateShaderModule(FragmentSpirV);
 	vk::PipelineShaderStageCreateInfo FragStageCreateInfo;
@@ -93,13 +93,79 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 	FragStageCreateInfo.module = FragModule;
 	FragStageCreateInfo.pName = "main";
 
+	SpvReflectShaderModule FragmentShaderReflection;
+	SPV_REFLECT_ASSERT(spvReflectCreateShaderModule(FragmentSpirV.size(), FragmentSpirV.data(), &FragmentShaderReflection));
+
 	vk::PipelineShaderStageCreateInfo ShaderStages[] = {VertStageCreateInfo, FragStageCreateInfo};
 
 	//Actually hook up Shader Stages
 	CreateInfo.stageCount = 2;
 	CreateInfo.pStages = ShaderStages;
 
-	//Fixed function create infos
+	// TODO: For PipelineLayout, get necessary information from shaders [See Steps below]
+	// [1] [DONE] Enumerate bindings for vertex shader
+	// [2] [DONE] Enumerate bindings for fragment shader
+	// [3] [DONE] Sort bindings by binding number to better find shared bindings
+	// [4] iterate over sorted bindings and set up each (shared bindings having both eVertex and eFragment stage bits )
+	// [For 4, if both stages use it, you would hit the binding twice, just need to |= the second flag bit]
+
+	std::vector<vk::DescriptorSetLayoutBinding> DescriptorBindings;
+	int LastEncounteredDescriptorBinding = -1;
+	
+	//TODO: Make this block generic and use it for both vert and frag sections
+	//Inputs: Reflection Module, Shader Stage
+	auto AddDescriptorBindingsFromShaderStage = [&] (const SpvReflectShaderModule* ShaderReflectionModule, const vk::ShaderStageFlagBits ShaderStage)
+	{
+		uint32_t DescriptorBindingCount = 0;
+		SPV_REFLECT_ASSERT(spvReflectEnumerateDescriptorBindings(ShaderReflectionModule, &DescriptorBindingCount, nullptr));
+
+		std::vector<SpvReflectDescriptorBinding*> ReflectionDescriptorBindings(DescriptorBindingCount);
+		
+		if (DescriptorBindingCount > 0)
+		{
+			SPV_REFLECT_ASSERT(spvReflectEnumerateDescriptorBindings(ShaderReflectionModule, &DescriptorBindingCount, ReflectionDescriptorBindings.data()));
+
+			std::sort(std::begin(ReflectionDescriptorBindings), std::end(ReflectionDescriptorBindings),
+			[](const SpvReflectDescriptorBinding* a, const SpvReflectDescriptorBinding* b) 
+			{
+				return a->binding < b->binding; 
+			});
+
+			for (auto& ReflectionDescriptorBinding : ReflectionDescriptorBindings)
+			{
+					//First see if a descriptor with this binding already exists in the array we're adding to
+					if ((int)ReflectionDescriptorBinding->binding <= LastEncounteredDescriptorBinding)
+					{
+						for (auto& DescriptorBinding : DescriptorBindings)
+						{
+							//TODO: find correct existing binding and |= the shader stage of this reflection binding to it
+						}
+					}
+					else //New Binding needs to be added
+					{
+						vk::DescriptorSetLayoutBinding DescriptorBinding = {0};
+						DescriptorBinding.binding = ReflectionDescriptorBinding->binding;
+						DescriptorBinding.descriptorType = (vk::DescriptorType)ReflectionDescriptorBinding->descriptor_type;
+						DescriptorBinding.descriptorCount = 1; //TODO:
+						DescriptorBinding.stageFlags = ShaderStage;
+
+						DescriptorBindings.push_back(DescriptorBinding);
+						LastEncounteredDescriptorBinding = DescriptorBinding.binding;
+					}
+
+					std::cout << ReflectionDescriptorBinding->binding << std::endl;
+					std::cout << ReflectionDescriptorBinding->input_attachment_index << std::endl;
+					std::cout << ReflectionDescriptorBinding->set << std::endl;
+					std::cout << to_string((vk::DescriptorType)ReflectionDescriptorBinding->descriptor_type) << std::endl;
+					std::cout << std::endl;
+			}
+		}
+	};
+
+	AddDescriptorBindingsFromShaderStage(&VertexShaderReflection,   vk::ShaderStageFlagBits::eVertex);
+	AddDescriptorBindingsFromShaderStage(&FragmentShaderReflection, vk::ShaderStageFlagBits::eFragment);
+
+	//Fixed function create infos (these member structs can be set before running "Build Pipeline")
 	CreateInfo.pVertexInputState = &VertexInput;
 	CreateInfo.pInputAssemblyState = &InputAssembly;
 	CreateInfo.pTessellationState = &Tessellation;
@@ -134,6 +200,9 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 	//Done with shader modules
 	VulkanContext::Get()->GetDevice().destroyShaderModule(VertModule);
 	VulkanContext::Get()->GetDevice().destroyShaderModule(FragModule);
+
+	spvReflectDestroyShaderModule(&VertexShaderReflection);
+	spvReflectDestroyShaderModule(&FragmentShaderReflection);
 }
 
 std::vector<char> VulkanGraphicsPipeline::LoadShaderFromFile(const std::string& filename)
