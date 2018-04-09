@@ -218,34 +218,9 @@ int main(int, char**)
 
 		//Pipeline.DynamicStates.push_back(vk::DynamicState::eViewport);
 		
-		//BEGIN DESCRIPTOR SET AND DESCRIPTOR SET LAYOUT SETUP
-		//TODO: Use Spir-V Reflect in "Build Pipeline to handle these"
-		
-		/* DESC SET BINDINGS */
-		vk::DescriptorSetLayoutBinding UniformLayoutBinding;
-		UniformLayoutBinding.binding = 0;
-		UniformLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-		UniformLayoutBinding.descriptorCount = 1;
-		UniformLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+		Pipeline.BuildPipeline(RenderPass, "shaders/vert.spv", "shaders/frag.spv");
+		/* ... End Pipeline Setup ... */
 
-		vk::DescriptorSetLayoutBinding TextureLayoutBinding;
-		TextureLayoutBinding.binding = 1;
-		TextureLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		TextureLayoutBinding.descriptorCount = 1;
-		TextureLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
-
-		std::array<vk::DescriptorSetLayoutBinding, 2> Bindings = {UniformLayoutBinding, TextureLayoutBinding};
-		
-		vk::DescriptorSetLayoutCreateInfo DescriptorLayoutCreateInfo;
-		DescriptorLayoutCreateInfo.bindingCount = static_cast<uint32_t>(Bindings.size());
-		DescriptorLayoutCreateInfo.pBindings = Bindings.data();
-
-		/* DESC SET LAYOUT (hooks into pipeline) */
-		vk::UniqueDescriptorSetLayout DescriptorSetLayout = Context->GetDevice().createDescriptorSetLayoutUnique(DescriptorLayoutCreateInfo);
-
-		Pipeline.PipelineLayoutCreateInfo.setLayoutCount = 1;
-		Pipeline.PipelineLayoutCreateInfo.pSetLayouts = &(DescriptorSetLayout.get());
-		
 		/* DESC POOL CREATION*/
 		std::array<vk::DescriptorPoolSize, 2> poolSizes = {};
 		poolSizes[0].type = vk::DescriptorType::eUniformBuffer;
@@ -265,7 +240,7 @@ int main(int, char**)
 		vk::DescriptorSetAllocateInfo DescriptorSetAllocInfo;
 		DescriptorSetAllocInfo.descriptorPool = DescriptorPool.get();
 		DescriptorSetAllocInfo.descriptorSetCount = 1;
-		DescriptorSetAllocInfo.pSetLayouts = &(DescriptorSetLayout.get());
+		DescriptorSetAllocInfo.pSetLayouts = &(Pipeline.DescriptorSetLayout.get());
 	
 		std::vector<vk::UniqueDescriptorSet> DescriptorSets = Context->GetDevice().allocateDescriptorSetsUnique(DescriptorSetAllocInfo);
 		vk::UniqueDescriptorSet& DescriptorSet = DescriptorSets[0]; //Just for ease of access later
@@ -289,9 +264,6 @@ int main(int, char**)
 		Context->GetDevice().updateDescriptorSets(DescriptorWrites, nullptr);
 
 		//END DESCRIPTOR SET AND DESCRIPTOR SET LAYOUT SETUP
-
-		/* ... End Pipeline Setup ... */
-		Pipeline.BuildPipeline(RenderPass, "shaders/vert.spv", "shaders/frag.spv");
 
 		std::vector<VulkanCommandBuffer> CommandBuffers;
 		CommandBuffers.resize(RenderPass.GetFramebuffers().size());
@@ -358,7 +330,7 @@ int main(int, char**)
 
 			// float FPS = 1.0f / deltaSeconds;
 			// std::cout << FPS << std::endl;
-			
+
 			LastTime = CurrentTime;
 
 			double MouseX, MouseY;

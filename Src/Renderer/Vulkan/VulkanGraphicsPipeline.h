@@ -52,6 +52,8 @@ public://Fixed Function Pipeline State
 	vk::PipelineDynamicStateCreateInfo DynamicState;
 	std::vector<vk::DynamicState> DynamicStates;
 
+	vk::UniqueDescriptorSetLayout DescriptorSetLayout;
+	std::vector<vk::DescriptorSetLayoutBinding> DescriptorBindings;
 	vk::PipelineLayoutCreateInfo PipelineLayoutCreateInfo;
 	vk::UniquePipelineLayout PipelineLayout;
 };

@@ -1,6 +1,7 @@
 #include "VulkanGraphicsPipeline.h"
 #include <iostream>
 #include <fstream>
+#include <map>
 #include <algorithm>
 
 #include "VulkanContext.h"
@@ -109,10 +110,9 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 	// [4] iterate over sorted bindings and set up each (shared bindings having both eVertex and eFragment stage bits )
 	// [For 4, if both stages use it, you would hit the binding twice, just need to |= the second flag bit]
 
-	std::vector<vk::DescriptorSetLayoutBinding> DescriptorBindings;
-	int LastEncounteredDescriptorBinding = -1;
+	//TODO: Replace with Contiguous Memory Map? removes the step at the end
+	std::map<uint32_t, vk::DescriptorSetLayoutBinding> DescriptorBindingsMap;
 	
-	//TODO: Make this block generic and use it for both vert and frag sections
 	//Inputs: Reflection Module, Shader Stage
 	auto AddDescriptorBindingsFromShaderStage = [&] (const SpvReflectShaderModule* ShaderReflectionModule, const vk::ShaderStageFlagBits ShaderStage)
 	{
@@ -125,6 +125,7 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 		{
 			SPV_REFLECT_ASSERT(spvReflectEnumerateDescriptorBindings(ShaderReflectionModule, &DescriptorBindingCount, ReflectionDescriptorBindings.data()));
 
+			//Sort by binding so we can easily check if the binding has already been added by a previous shader stage
 			std::sort(std::begin(ReflectionDescriptorBindings), std::end(ReflectionDescriptorBindings),
 			[](const SpvReflectDescriptorBinding* a, const SpvReflectDescriptorBinding* b) 
 			{
@@ -133,15 +134,13 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 
 			for (auto& ReflectionDescriptorBinding : ReflectionDescriptorBindings)
 			{
-					//First see if a descriptor with this binding already exists in the array we're adding to
-					if ((int)ReflectionDescriptorBinding->binding <= LastEncounteredDescriptorBinding)
+					auto& ExistingBinding = DescriptorBindingsMap.find(ReflectionDescriptorBinding->binding);
+					if (ExistingBinding != DescriptorBindingsMap.end())
 					{
-						for (auto& DescriptorBinding : DescriptorBindings)
-						{
-							//TODO: find correct existing binding and |= the shader stage of this reflection binding to it
-						}
+						//If this binding already exists (from a previous shader stage), append this ShaderStages flag to it
+						ExistingBinding->second.stageFlags |= ShaderStage;
 					}
-					else //New Binding needs to be added
+					else //Otherwise a new binding needs to be added
 					{
 						vk::DescriptorSetLayoutBinding DescriptorBinding = {0};
 						DescriptorBinding.binding = ReflectionDescriptorBinding->binding;
@@ -149,8 +148,7 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 						DescriptorBinding.descriptorCount = 1; //TODO:
 						DescriptorBinding.stageFlags = ShaderStage;
 
-						DescriptorBindings.push_back(DescriptorBinding);
-						LastEncounteredDescriptorBinding = DescriptorBinding.binding;
+						DescriptorBindingsMap.emplace(DescriptorBinding.binding, DescriptorBinding);
 					}
 
 					std::cout << ReflectionDescriptorBinding->binding << std::endl;
@@ -164,6 +162,24 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 
 	AddDescriptorBindingsFromShaderStage(&VertexShaderReflection,   vk::ShaderStageFlagBits::eVertex);
 	AddDescriptorBindingsFromShaderStage(&FragmentShaderReflection, vk::ShaderStageFlagBits::eFragment);
+
+	/* Would prefer a contiguous memory key/value container, but this is only one loop through 
+	   the data rather than every time we need to search for an existing binding */
+	DescriptorBindings.clear();
+	for (auto& Element : DescriptorBindingsMap)
+	{
+		DescriptorBindings.push_back(Element.second);
+	}
+
+	vk::DescriptorSetLayoutCreateInfo DescriptorLayoutCreateInfo;
+	DescriptorLayoutCreateInfo.bindingCount = static_cast<uint32_t>(DescriptorBindings.size());
+	DescriptorLayoutCreateInfo.pBindings = DescriptorBindings.data();
+
+	/** build our descriptor set layout from the above descriptor set reflection data */
+	DescriptorSetLayout = VulkanContext::Get()->GetDevice().createDescriptorSetLayoutUnique(DescriptorLayoutCreateInfo);
+
+	PipelineLayoutCreateInfo.setLayoutCount = 1;
+	PipelineLayoutCreateInfo.pSetLayouts = &(DescriptorSetLayout.get());
 
 	//Fixed function create infos (these member structs can be set before running "Build Pipeline")
 	CreateInfo.pVertexInputState = &VertexInput;
