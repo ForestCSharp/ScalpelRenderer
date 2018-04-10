@@ -242,7 +242,7 @@ void VulkanContext::CreateDeviceAndQueues()
 			if (CurrPhysicalDevice.getSurfaceSupportKHR(i, Surface))
 			{
 				PresentQueueIndex = i;
-				std::cout << "Using Device with Presentation Queue Support:"  << PhysicalDeviceProperties.deviceName <<  " | QueueIndex: "<< i << std::endl;
+				std::cout << "Using Device with Presentation Queue Support: "  << PhysicalDeviceProperties.deviceName <<  " | QueueIndex: "<< i << std::endl;
 			}
 
             vk::PhysicalDeviceFeatures PhysDeviceFeatures;

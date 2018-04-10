@@ -15,7 +15,12 @@ public:
 	vk::Pipeline GetHandle() { return GraphicsPipeline.get(); }
 	vk::PipelineLayout GetLayout() { return PipelineLayout.get(); }
 
-protected: //Internal Pipeline Member variable
+	//Creates a descriptor pool and allocates descriptor sets for the entirety of this Pipeline's descriptor bindings
+	std::pair<vk::UniqueDescriptorPool,std::vector<vk::UniqueDescriptorSet>> AllocateDescriptorSets(uint32_t NumSets);
+	//Create a descriptor pool used to allocate up to MaxSets descriptor sets
+	vk::UniqueDescriptorPool CreateDescriptorPool(uint32_t MaxSets);
+
+protected: //Internal Pipeline Member variables
 
 	vk::UniquePipeline GraphicsPipeline;
 
@@ -54,6 +59,7 @@ public://Fixed Function Pipeline State
 
 	vk::UniqueDescriptorSetLayout DescriptorSetLayout;
 	std::vector<vk::DescriptorSetLayoutBinding> DescriptorBindings;
+
 	vk::PipelineLayoutCreateInfo PipelineLayoutCreateInfo;
 	vk::UniquePipelineLayout PipelineLayout;
 };

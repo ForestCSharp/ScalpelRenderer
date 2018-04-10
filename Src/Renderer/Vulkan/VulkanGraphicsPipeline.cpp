@@ -49,10 +49,7 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 			return a->location < b->location; 
 		});
 
-
 		uint32_t CurrentOffset = 0;
-
-		std::cout << "BEGIN VERTEX INPUT REFLECTION" << std::endl << std::endl;
 
 		//Individual elements of our vertices
 		std::vector<vk::VertexInputAttributeDescription> InputAttributes;
@@ -65,13 +62,6 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 			Attribute.offset = CurrentOffset;
 
 			InputAttributes.push_back(Attribute);
-
-			std::cout << Input->name << std::endl;
-			std::cout << Input->location << std::endl;
-			std::cout << to_string(Attribute.format) << std::endl;
-			std::cout << CurrentOffset << std::endl;
-			std::cout << std::endl;
-
 			CurrentOffset += spv_reflect::FormatSize((VkFormat) Attribute.format);		
 		}
 
@@ -103,17 +93,9 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 	CreateInfo.stageCount = 2;
 	CreateInfo.pStages = ShaderStages;
 
-	// TODO: For PipelineLayout, get necessary information from shaders [See Steps below]
-	// [1] [DONE] Enumerate bindings for vertex shader
-	// [2] [DONE] Enumerate bindings for fragment shader
-	// [3] [DONE] Sort bindings by binding number to better find shared bindings
-	// [4] iterate over sorted bindings and set up each (shared bindings having both eVertex and eFragment stage bits )
-	// [For 4, if both stages use it, you would hit the binding twice, just need to |= the second flag bit]
-
-	//TODO: Replace with Contiguous Memory Map? removes the step at the end
 	std::map<uint32_t, vk::DescriptorSetLayoutBinding> DescriptorBindingsMap;
 	
-	//Inputs: Reflection Module, Shader Stage
+	//Lambda for building up list of descriptors using its ReflectionModule and ShaderStage
 	auto AddDescriptorBindingsFromShaderStage = [&] (const SpvReflectShaderModule* ShaderReflectionModule, const vk::ShaderStageFlagBits ShaderStage)
 	{
 		uint32_t DescriptorBindingCount = 0;
@@ -150,21 +132,14 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 
 						DescriptorBindingsMap.emplace(DescriptorBinding.binding, DescriptorBinding);
 					}
-
-					std::cout << ReflectionDescriptorBinding->binding << std::endl;
-					std::cout << ReflectionDescriptorBinding->input_attachment_index << std::endl;
-					std::cout << ReflectionDescriptorBinding->set << std::endl;
-					std::cout << to_string((vk::DescriptorType)ReflectionDescriptorBinding->descriptor_type) << std::endl;
-					std::cout << std::endl;
 			}
 		}
 	};
 
 	AddDescriptorBindingsFromShaderStage(&VertexShaderReflection,   vk::ShaderStageFlagBits::eVertex);
 	AddDescriptorBindingsFromShaderStage(&FragmentShaderReflection, vk::ShaderStageFlagBits::eFragment);
+	//TODO: Ability to optionally add additonal Shader Stages
 
-	/* Would prefer a contiguous memory key/value container, but this is only one loop through 
-	   the data rather than every time we need to search for an existing binding */
 	DescriptorBindings.clear();
 	for (auto& Element : DescriptorBindingsMap)
 	{
@@ -219,6 +194,40 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 
 	spvReflectDestroyShaderModule(&VertexShaderReflection);
 	spvReflectDestroyShaderModule(&FragmentShaderReflection);
+}
+
+std::pair<vk::UniqueDescriptorPool,std::vector<vk::UniqueDescriptorSet>> VulkanGraphicsPipeline::AllocateDescriptorSets(uint32_t NumSets)
+{
+	vk::UniqueDescriptorPool DescriptorPool = CreateDescriptorPool(NumSets);
+
+	vk::DescriptorSetAllocateInfo DescriptorSetAllocInfo;
+	DescriptorSetAllocInfo.descriptorPool = DescriptorPool.get();
+	DescriptorSetAllocInfo.descriptorSetCount = NumSets;
+	DescriptorSetAllocInfo.pSetLayouts = &(DescriptorSetLayout.get());
+
+	std::vector<vk::UniqueDescriptorSet> DescriptorSets = VulkanContext::Get()->GetDevice().allocateDescriptorSetsUnique(DescriptorSetAllocInfo);
+
+	return std::pair<vk::UniqueDescriptorPool,std::vector<vk::UniqueDescriptorSet>>(std::move(DescriptorPool), std::move(DescriptorSets));
+}
+
+vk::UniqueDescriptorPool VulkanGraphicsPipeline::CreateDescriptorPool(uint32_t MaxSets)
+{
+	std::vector<vk::DescriptorPoolSize> PoolSizes = {};
+	for (auto& DescriptorBinding : DescriptorBindings)
+	{
+		vk::DescriptorPoolSize PoolSize;
+		PoolSize.type = DescriptorBinding.descriptorType;
+		PoolSize.descriptorCount = DescriptorBinding.descriptorCount;
+		PoolSizes.push_back(PoolSize);
+	}
+
+	vk::DescriptorPoolCreateInfo PoolCreateInfo;
+	PoolCreateInfo.poolSizeCount = static_cast<uint32_t>(PoolSizes.size());
+	PoolCreateInfo.pPoolSizes = PoolSizes.data();
+	PoolCreateInfo.maxSets = MaxSets;
+	PoolCreateInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+
+	return VulkanContext::Get()->GetDevice().createDescriptorPoolUnique(PoolCreateInfo);
 }
 
 std::vector<char> VulkanGraphicsPipeline::LoadShaderFromFile(const std::string& filename)

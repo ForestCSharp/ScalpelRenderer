@@ -29,6 +29,7 @@ void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& Mou
 	glm::vec3 CamRight   = glm::normalize(glm::cross(CamForward, glm::vec3(0,0,1))) * MoveSpeed;
 	glm::vec3 CamUp      = glm::normalize(glm::cross(CamRight, CamForward)) * MoveSpeed;
 	
+	//TODO: Have Key Callback write to a std::map<int, bool> that maps keycodes to their pressed state
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
 		CameraPosition += CamForward;
@@ -60,22 +61,9 @@ void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& Mou
 		Target += CamUp;
 	}
 
-	
-	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
-		
-	}
-	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-	{
-
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-	{
-
-	}
-	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-	{
-
+		glfwSetWindowShouldClose(window, true);
 	}
 
 	//Camera Mouse Rotation
@@ -102,8 +90,11 @@ int main(int, char**)
 	{
 		std::cout << "Error: " << error << " desc: " << description << std::endl;	
 	};
+
 	glfwSetErrorCallback(error_callback);
-	if (!glfwInit()) {
+
+	if (!glfwInit()) 
+	{
 		return 1;
 	}
 
@@ -112,13 +103,10 @@ int main(int, char**)
 	
 	auto key_callback = [] (GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
-		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		{
-			glfwSetWindowShouldClose(window, true);
-		}
+
 	};
 
-	glfwSetKeyCallback(window, key_callback);
+	//glfwSetKeyCallback(window, key_callback);
 
 	//TODO: VULKAN RENDERER TESTING
 	VulkanContext* Context = VulkanContext::Get();
@@ -165,9 +153,9 @@ int main(int, char**)
 
 			Uniform.UpdateUniformData(&Ubo, sizeof(UniformBufferObject));
 		};
-		UpdateUniformData(UniformBuffer, 0.0f);
 
 		/* ... Pipeline Setup Here ... */
+		//TODO: Better way to deal with all of this pipeline setup (perhaps a pipeline definition file that goes along with Shader SpirV)
 		VulkanGraphicsPipeline Pipeline;
 
 		Pipeline.InputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
@@ -201,7 +189,7 @@ int main(int, char**)
 		Pipeline.ColorBlendAttachment.blendEnable = VK_FALSE;
 
 		Pipeline.ColorBlending.logicOpEnable = VK_FALSE;
-		Pipeline.ColorBlending.logicOp = vk::LogicOp::eCopy; // Optional
+		Pipeline.ColorBlending.logicOp = vk::LogicOp::eCopy; // Optional when off
 		Pipeline.ColorBlending.attachmentCount = 1;
 		Pipeline.ColorBlending.pAttachments = &Pipeline.ColorBlendAttachment;
 		Pipeline.ColorBlending.blendConstants[0] = 0.0f;
@@ -220,30 +208,11 @@ int main(int, char**)
 		
 		Pipeline.BuildPipeline(RenderPass, "shaders/vert.spv", "shaders/frag.spv");
 		/* ... End Pipeline Setup ... */
-
-		/* DESC POOL CREATION*/
-		std::array<vk::DescriptorPoolSize, 2> poolSizes = {};
-		poolSizes[0].type = vk::DescriptorType::eUniformBuffer;
-		poolSizes[0].descriptorCount = 1;
-		poolSizes[1].type = vk::DescriptorType::eCombinedImageSampler;
-		poolSizes[1].descriptorCount = 1;
-
-		vk::DescriptorPoolCreateInfo PoolCreateInfo;
-		PoolCreateInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-		PoolCreateInfo.pPoolSizes = poolSizes.data();
-		PoolCreateInfo.maxSets = 1;
-		PoolCreateInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
-
-		vk::UniqueDescriptorPool DescriptorPool = Context->GetDevice().createDescriptorPoolUnique(PoolCreateInfo);
-		
-		/* Allocate Actual Descriptor Sets from Pool */
-		vk::DescriptorSetAllocateInfo DescriptorSetAllocInfo;
-		DescriptorSetAllocInfo.descriptorPool = DescriptorPool.get();
-		DescriptorSetAllocInfo.descriptorSetCount = 1;
-		DescriptorSetAllocInfo.pSetLayouts = &(Pipeline.DescriptorSetLayout.get());
 	
-		std::vector<vk::UniqueDescriptorSet> DescriptorSets = Context->GetDevice().allocateDescriptorSetsUnique(DescriptorSetAllocInfo);
-		vk::UniqueDescriptorSet& DescriptorSet = DescriptorSets[0]; //Just for ease of access later
+		/*TODO: std::pair<vk::UniqueDescriptorPool,std::vector<vk::UniqueDescriptorSet>> is a bit verbose, 
+		   and "first" and "second" don't really do a good job of describing what they hold */
+		auto DescriptorPoolAndSets = Pipeline.AllocateDescriptorSets(1);
+		vk::UniqueDescriptorSet& DescriptorSet = DescriptorPoolAndSets.second[0]; //Just for ease of access later
 
 		//Actually reference our image view and sampler
 		std::array<vk::WriteDescriptorSet,2> DescriptorWrites;
@@ -318,8 +287,6 @@ int main(int, char**)
 		double LastMouseX, LastMouseY;
 		glfwGetCursorPos(window, &LastMouseX, &LastMouseY);
 
-		static int i = 0;
-
 		while (!glfwWindowShouldClose(window))
 		{
 			glfwPollEvents();
@@ -328,8 +295,8 @@ int main(int, char**)
 			double CurrentTime = glfwGetTime();
 			deltaSeconds = (float)(CurrentTime - LastTime);
 
-			// float FPS = 1.0f / deltaSeconds;
-			// std::cout << FPS << std::endl;
+			//float FPS = 1.0f / deltaSeconds;
+			//std::cout << FPS << std::endl;
 
 			LastTime = CurrentTime;
 
@@ -359,6 +326,7 @@ int main(int, char**)
 			auto NextImage = Context->GetDevice().acquireNextImageKHR(Swapchain.GetHandle(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphore.get(), vk::Fence());
 			uint32_t ImageIndex = NextImage.value;
 
+			//Resize Scenarios
 			if ( NextImage.result == vk::Result::eErrorOutOfDateKHR || NextImage.result == vk::Result::eErrorIncompatibleDisplayKHR || NewWidth != Width || NewHeight != Height)
 			{
 				Context->GetDevice().waitIdle();

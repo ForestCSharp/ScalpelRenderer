@@ -1249,7 +1249,7 @@ inline SpvReflectResult ShaderModule::ChangeOutputVariableLocation(
                                                 new_location);
 }
 
-//Pulled from SpirV_Reflect example
+//FCS: Pulled from SpirV_Reflect example
 //TODO: Better way to handle this. Does Vulkan not have a way to compute size from a VKFormat
 static uint32_t FormatSize(VkFormat format)
 {
