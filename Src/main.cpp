@@ -263,6 +263,7 @@ int main(int, char**)
 				
 				vk::Buffer VertexBuffers[] = {VertexBuffer.GetHandle()};
 				vk::DeviceSize Offsets[] = {0};
+				
 				CmdBuffer().bindVertexBuffers(0, 1, VertexBuffers, Offsets);
 				CmdBuffer().bindIndexBuffer(IndexBuffer.GetHandle(), 0, vk::IndexType::eUint16);
 				CmdBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, Pipeline.GetLayout(), 0, 1, &DescriptorSet.get(), 0, nullptr);
@@ -295,9 +296,6 @@ int main(int, char**)
 			double CurrentTime = glfwGetTime();
 			deltaSeconds = (float)(CurrentTime - LastTime);
 
-			float FPS = 1.0f / deltaSeconds;
-			std::cout << FPS << std::endl;
-
 			LastTime = CurrentTime;
 
 			double MouseX, MouseY;
@@ -322,12 +320,8 @@ int main(int, char**)
 			}
 
 			UpdateUniformData(UniformBuffer, deltaSeconds);
-			
-			auto NextImage = Context->GetDevice().acquireNextImageKHR(Swapchain.GetHandle(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphore.get(), vk::Fence());
-			uint32_t ImageIndex = NextImage.value;
 
-			//Resize Scenarios
-			if ( NextImage.result == vk::Result::eErrorOutOfDateKHR || NextImage.result == vk::Result::eErrorIncompatibleDisplayKHR || NewWidth != Width || NewHeight != Height)
+			auto RebuildSwapchain = [&]()
 			{
 				Context->GetDevice().waitIdle();
 
@@ -340,12 +334,27 @@ int main(int, char**)
 				Pipeline.Scissor.extent = Swapchain.GetExtent();
 				Pipeline.BuildPipeline(RenderPass, "shaders/vert.spv", "shaders/frag.spv");
 
-				//Recall this lambda
 				BuildDrawingCommandBuffers();
 
 				Width = NewWidth;
 				Height = NewHeight;
+			};
+
+			//Handle Resize (can still try to acquire our image this frame)
+			if (NewWidth != Width || NewHeight != Height)
+			{
+				RebuildSwapchain();
 			}
+
+			auto NextImage = Context->GetDevice().acquireNextImageKHR(Swapchain.GetHandle(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphore.get(), vk::Fence());
+			if (NextImage.result == vk::Result::eErrorOutOfDateKHR || NextImage.result == vk::Result::eSuboptimalKHR)
+			{
+				//Acquiring Image failed: Need to rebuild our Out-Of-Date or SubOptimal swapchain
+				RebuildSwapchain();
+				continue;
+			}
+
+			uint32_t ImageIndex = NextImage.value;
 
 			vk::SubmitInfo SubmitInfo;
 			vk::Semaphore WaitSemaphores[] = {ImageAvailableSemaphore.get()};
@@ -373,7 +382,7 @@ int main(int, char**)
 			PresentInfo.pSwapchains = SwapChains;
 			PresentInfo.pImageIndices = &ImageIndex;
 
-			Context->GetPresentQueue().presentKHR(PresentInfo);
+			vk::Result Result = Context->GetPresentQueue().presentKHR(PresentInfo);
 		
 			Context->GetPresentQueue().waitIdle();
 		}
