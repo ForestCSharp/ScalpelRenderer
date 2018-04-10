@@ -34,3 +34,4 @@ Scalpel.dir/
 
 #FCS
 x64/
+*.stackdump

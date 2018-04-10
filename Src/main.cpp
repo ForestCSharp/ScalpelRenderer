@@ -295,8 +295,8 @@ int main(int, char**)
 			double CurrentTime = glfwGetTime();
 			deltaSeconds = (float)(CurrentTime - LastTime);
 
-			//float FPS = 1.0f / deltaSeconds;
-			//std::cout << FPS << std::endl;
+			float FPS = 1.0f / deltaSeconds;
+			std::cout << FPS << std::endl;
 
 			LastTime = CurrentTime;
 
