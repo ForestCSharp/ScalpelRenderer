@@ -39,6 +39,9 @@ find_package(OpenGL REQUIRED)
 
 add_executable(Scalpel ${CMAKE_CURRENT_SOURCE_DIR}/Src/main.cpp)
 
+#Asset directory
+target_compile_definitions(Scalpel PRIVATE ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets")
+
 #Link With GLFW
 target_link_libraries(Scalpel glfw ${GLFW_LIBRARIES})
 #Link With OpenGL

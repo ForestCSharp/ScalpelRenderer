@@ -81,8 +81,6 @@ void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& Mou
 	}
 }
 
-//TODO: Non-relative File path for storing resources
-
 int main(int, char**)
 {
 	// Setup window
@@ -100,15 +98,7 @@ int main(int, char**)
 
 	glfwWindowHint( GLFW_CLIENT_API, GLFW_NO_API );
 	GLFWwindow* window = glfwCreateWindow(1080, 720, "Scalpel", NULL, NULL);
-	
-	auto key_callback = [] (GLFWwindow* window, int key, int scancode, int action, int mods)
-	{
 
-	};
-
-	//glfwSetKeyCallback(window, key_callback);
-
-	//TODO: VULKAN RENDERER TESTING
 	VulkanContext* Context = VulkanContext::Get();
 	Context->Startup(window);
 	
@@ -123,7 +113,7 @@ int main(int, char**)
 		VulkanBuffer VertexBuffer((void*) vertices.data(), sizeof(vertices[0]) * vertices.size(), EBufferType::VertexBuffer);
 		VulkanBuffer IndexBuffer((void*) indices.data(), sizeof(indices[0]) * indices.size(), EBufferType::IndexBuffer);
 
-		std::string ImageName("textures/test.png");
+		std::string ImageName(ASSET_DIR + std::string("/textures/test.png"));
 		VulkanImage Image(ImageName);
 		vk::ImageView ImageView = Image.GetImageView();
 		vk::Sampler ImageSampler = Image.GetSampler();
@@ -206,7 +196,7 @@ int main(int, char**)
 
 		//Pipeline.DynamicStates.push_back(vk::DynamicState::eViewport);
 		
-		Pipeline.BuildPipeline(RenderPass, "shaders/vert.spv", "shaders/frag.spv");
+		Pipeline.BuildPipeline(RenderPass, ASSET_DIR + std::string("/shaders/vert.spv"), ASSET_DIR + std::string("/shaders/frag.spv"));
 		/* ... End Pipeline Setup ... */
 	
 		/*TODO: std::pair<vk::UniqueDescriptorPool,std::vector<vk::UniqueDescriptorSet>> is a bit verbose, 
@@ -332,7 +322,7 @@ int main(int, char**)
 				Pipeline.Viewport.width = (float) Swapchain.GetExtent().width;
 				Pipeline.Viewport.height = (float) Swapchain.GetExtent().height;
 				Pipeline.Scissor.extent = Swapchain.GetExtent();
-				Pipeline.BuildPipeline(RenderPass, "shaders/vert.spv", "shaders/frag.spv");
+				Pipeline.BuildPipeline(RenderPass, ASSET_DIR + std::string("/shaders/vert.spv"), ASSET_DIR + std::string("/shaders/frag.spv"));
 
 				BuildDrawingCommandBuffers();
 
