@@ -1,18 +1,17 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
-#include <string>
 
 class VulkanImage
 {
 public:
     //Load in a texture from file
-    VulkanImage(std::string& filename);
+    VulkanImage(class std::string& filename);
     //Creates a general purpose image and doesn't fill it with data
     VulkanImage(uint32_t Width, uint32_t Height, vk::Format Format, vk::ImageTiling Tiling,
                 vk::ImageUsageFlags Usage, vk::MemoryPropertyFlags MemoryProperties);
     
-    void LoadImageFromFile(std::string& filename);
+    void LoadImageFromFile(class std::string& filename);
 
     void CreateImage(uint32_t Width, uint32_t Height, vk::Format Format, vk::ImageTiling Tiling,
                             vk::ImageUsageFlags Usage, vk::MemoryPropertyFlags MemoryProperties);

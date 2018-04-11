@@ -17,6 +17,9 @@
 #include "Renderer/Vulkan/VulkanUniform.h"
 #include "Renderer/Vulkan/VulkanImage.h"
 
+#include "Renderer/Framework/RenderItem.hpp"
+
+
 #include <GLFW\glfw3.h>
 
 #define VULKAN_HPP_NO_EXCEPTIONS
@@ -110,8 +113,9 @@ int main(int, char**)
 		VulkanRenderPass RenderPass;
 		RenderPass.BuildRenderPass(Swapchain);
 
-		VulkanBuffer VertexBuffer((void*) vertices.data(), sizeof(vertices[0]) * vertices.size(), EBufferType::VertexBuffer);
-		VulkanBuffer IndexBuffer((void*) indices.data(), sizeof(indices[0]) * indices.size(), EBufferType::IndexBuffer);
+		RenderItem TestRenderItem((void*) vertices.data(), sizeof(vertices[0]) * vertices.size(),
+								  (void*) indices.data(), sizeof(indices[0]) * indices.size(), static_cast<uint32_t>(indices.size()));
+		
 
 		std::string ImageName(ASSET_DIR + std::string("/textures/test.png"));
 		VulkanImage Image(ImageName);
@@ -201,10 +205,11 @@ int main(int, char**)
 	
 		/*TODO: std::pair<vk::UniqueDescriptorPool,std::vector<vk::UniqueDescriptorSet>> is a bit verbose, 
 		   and "first" and "second" don't really do a good job of describing what they hold */
+		//Maybe something like struct DescriptorData { has the pool and array of sets alloc'd from that pool };
 		auto DescriptorPoolAndSets = Pipeline.AllocateDescriptorSets(1);
 		vk::UniqueDescriptorSet& DescriptorSet = DescriptorPoolAndSets.second[0]; //Just for ease of access later
 
-		//Actually reference our image view and sampler
+		//Write to our descriptor set
 		std::array<vk::WriteDescriptorSet,2> DescriptorWrites;
 		DescriptorWrites[0].dstSet = DescriptorSet.get();
 		DescriptorWrites[0].dstBinding = 0;
@@ -222,22 +227,22 @@ int main(int, char**)
 
 		Context->GetDevice().updateDescriptorSets(DescriptorWrites, nullptr);
 
-		//END DESCRIPTOR SET AND DESCRIPTOR SET LAYOUT SETUP
-
 		std::vector<VulkanCommandBuffer> CommandBuffers;
 		CommandBuffers.resize(RenderPass.GetFramebuffers().size());
 
-		// (i.e. static meshes, skinned meshes, etc.)
+
+
 		//Wrapped in lambda for window resize below
-		auto BuildDrawingCommandBuffers = [&]()
+		auto BuildPrimaryCommandBuffers = [&]()
 		{
 			for (size_t i = 0; i < CommandBuffers.size(); ++i)
 			{
-				auto& CmdBuffer = CommandBuffers[i];
-				CmdBuffer.Begin();
-				/* ... Rendering Commands Here ... */
+				auto& CommandBuffer = CommandBuffers[i];
+				CommandBuffer.Begin();
+
+				//TODO: Function to handle the BeginInfo, BeginRenderPass, ExecuteSecondary, EndRenderPass
 				vk::RenderPassBeginInfo BeginInfo;
-				BeginInfo.renderPass = RenderPass.GetRenderPass();
+				BeginInfo.renderPass = RenderPass.GetHandle();
 				BeginInfo.framebuffer = RenderPass.GetFramebuffers()[i].get();
 				BeginInfo.renderArea.offset = {0,0};
 				BeginInfo.renderArea.extent = Swapchain.GetExtent();
@@ -248,22 +253,22 @@ int main(int, char**)
 				
 				BeginInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
 				BeginInfo.pClearValues = ClearValues.data();
-				CmdBuffer().beginRenderPass(BeginInfo, vk::SubpassContents::eInline);
-				CmdBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, Pipeline.GetHandle());
-				
-				vk::Buffer VertexBuffers[] = {VertexBuffer.GetHandle()};
-				vk::DeviceSize Offsets[] = {0};
-				
-				CmdBuffer().bindVertexBuffers(0, 1, VertexBuffers, Offsets);
-				CmdBuffer().bindIndexBuffer(IndexBuffer.GetHandle(), 0, vk::IndexType::eUint16);
-				CmdBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, Pipeline.GetLayout(), 0, 1, &DescriptorSet.get(), 0, nullptr);
-				CmdBuffer().drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
-				CmdBuffer().endRenderPass();
-				CmdBuffer.End();
+
+				CommandBuffer().beginRenderPass(BeginInfo, vk::SubpassContents::eInline);
+
+					//TODO: Will execute secondary command buffer owned by the render pass we just began here
+
+				CommandBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, Pipeline.GetHandle());
+
+				//Appends Descriptor Set Bind
+				TestRenderItem.BuildCommands(CommandBuffer, Pipeline, DescriptorSet.get());
+
+				CommandBuffer().endRenderPass();
+				CommandBuffer.End();
 			}
 		};
 
-		BuildDrawingCommandBuffers();
+		BuildPrimaryCommandBuffers();
 
 		vk::UniqueSemaphore ImageAvailableSemaphore = Context->GetDevice().createSemaphoreUnique(vk::SemaphoreCreateInfo());
 		vk::UniqueSemaphore RenderFinishedSemaphore = Context->GetDevice().createSemaphoreUnique(vk::SemaphoreCreateInfo());
@@ -324,7 +329,7 @@ int main(int, char**)
 				Pipeline.Scissor.extent = Swapchain.GetExtent();
 				Pipeline.BuildPipeline(RenderPass, ASSET_DIR + std::string("/shaders/vert.spv"), ASSET_DIR + std::string("/shaders/frag.spv"));
 
-				BuildDrawingCommandBuffers();
+				BuildPrimaryCommandBuffers();
 
 				Width = NewWidth;
 				Height = NewHeight;
@@ -355,7 +360,7 @@ int main(int, char**)
 			SubmitInfo.pWaitDstStageMask = WaitStages;
 
 			SubmitInfo.commandBufferCount = 1;
-			SubmitInfo.pCommandBuffers = &CommandBuffers[ImageIndex].Get();
+			SubmitInfo.pCommandBuffers = &CommandBuffers[ImageIndex].GetHandle();
 			
 			vk::Semaphore SignalSemaphores[] = {RenderFinishedSemaphore.get()};
 			SubmitInfo.signalSemaphoreCount = 1;

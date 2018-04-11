@@ -1,5 +1,7 @@
 #include "VulkanImage.h"
 
+#include <string>
+
 #include "VulkanContext.h"
 #include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
@@ -130,7 +132,7 @@ void VulkanImage::TransitionImageLayout(vk::ImageLayout TargetLayout)
     }
 
     vk::DependencyFlags DependencyFlags;
-    CommandBuffer.Get().pipelineBarrier(SrcStage, DstStage, DependencyFlags, nullptr, nullptr, vk::ArrayProxy<const vk::ImageMemoryBarrier>(Barrier));
+    CommandBuffer().pipelineBarrier(SrcStage, DstStage, DependencyFlags, nullptr, nullptr, vk::ArrayProxy<const vk::ImageMemoryBarrier>(Barrier));
 
     CommandBuffer.End();
     CommandBuffer.SubmitWaitIdle();
@@ -152,7 +154,7 @@ void VulkanImage::CopyBufferToImage(vk::Buffer Buffer, uint32_t width, uint32_t 
     CopyRegion.imageSubresource.layerCount = 1;
     CopyRegion.imageOffset = {0,0,0};
     CopyRegion.imageExtent = {width, height, 1};
-    CommandBuffer.Get().copyBufferToImage(Buffer, Image.get(), vk::ImageLayout::eTransferDstOptimal, 1, &CopyRegion);
+    CommandBuffer().copyBufferToImage(Buffer, Image.get(), vk::ImageLayout::eTransferDstOptimal, 1, &CopyRegion);
     CommandBuffer.End();
     CommandBuffer.SubmitWaitIdle();
 }

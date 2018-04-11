@@ -59,7 +59,7 @@ void VulkanBufferUtils::CopyBuffer(vk::UniqueBuffer& SourceBuffer, vk::UniqueBuf
 	CommandBuffer.Begin(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 	vk::BufferCopy CopyRegion;
 	CopyRegion.size = CopySize;
-	CommandBuffer.Get().copyBuffer(SourceBuffer.get(), DestinationBuffer.get(), 1, &CopyRegion);
+	CommandBuffer.GetHandle().copyBuffer(SourceBuffer.get(), DestinationBuffer.get(), 1, &CopyRegion);
 	CommandBuffer.End();
 	CommandBuffer.SubmitWaitIdle();
 }

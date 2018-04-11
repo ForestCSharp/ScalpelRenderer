@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+
 #include <glm/glm.hpp>
 #include <vector>
 
@@ -37,7 +38,6 @@ enum class EBufferType
 	IndexBuffer
 };
 
-//TODO: Move to own file
 class VulkanBufferUtils 
 {
 public:

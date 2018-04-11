@@ -1,4 +1,5 @@
 #include "VulkanGraphicsPipeline.h"
+#include <string>
 #include <iostream>
 #include <fstream>
 #include <map>
@@ -183,7 +184,7 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 	
 	//TODO: Hook up Layout, Renderpass, and subpass vars in struct
 	//Render pass hookup
-	CreateInfo.renderPass = RenderPass.GetRenderPass();
+	CreateInfo.renderPass = RenderPass.GetHandle();
 	CreateInfo.subpass = 0;
 	
 	GraphicsPipeline = VulkanContext::Get()->GetDevice().createGraphicsPipelineUnique(vk::PipelineCache(), CreateInfo);

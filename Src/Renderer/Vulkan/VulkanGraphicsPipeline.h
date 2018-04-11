@@ -1,8 +1,9 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
-#include <string>
 #include <vector>
+
+class std::string;
 
 class VulkanGraphicsPipeline
 {

@@ -2,8 +2,9 @@
 
 #include "VulkanContext.h"
 #include "VulkanSwapchain.h"
+#include "VulkanCommandBuffer.h"
 
-VulkanRenderPass::VulkanRenderPass()
+VulkanRenderPass::VulkanRenderPass() : CommandBuffer(true /* bSecondary */)
 {
 
 }
@@ -11,7 +12,6 @@ VulkanRenderPass::VulkanRenderPass()
 void VulkanRenderPass::BuildRenderPass(VulkanSwapchain& Swapchain)
 {
 	//TODO: Make generic
-	//TODO: way to build up attachments dynamically
 
 	vk::AttachmentDescription ColorAttachment;
 	ColorAttachment.format = Swapchain.GetSwapchainFormat();
@@ -83,7 +83,7 @@ void VulkanRenderPass::BuildRenderPass(VulkanSwapchain& Swapchain)
 		std::vector<vk::ImageView> attachments = {UniqueImageView.get(), Swapchain.GetDepthView()};
 
 		vk::FramebufferCreateInfo FramebufferCreateInfo;
-		FramebufferCreateInfo.renderPass = GetRenderPass();
+		FramebufferCreateInfo.renderPass = GetHandle();
 		FramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		FramebufferCreateInfo.pAttachments = attachments.data();
 		FramebufferCreateInfo.width = Swapchain.GetExtent().width;
@@ -93,4 +93,19 @@ void VulkanRenderPass::BuildRenderPass(VulkanSwapchain& Swapchain)
 		Framebuffers.push_back(VulkanContext::Get()->GetDevice().createFramebufferUnique(FramebufferCreateInfo));
 	}
 	//End Framebuffer Creation
+}
+
+void VulkanRenderPass::BuildCommands()
+{
+	vk::CommandBufferUsageFlags UsageFlags = vk::CommandBufferUsageFlagBits::eRenderPassContinue | vk::CommandBufferUsageFlagBits::eSimultaneousUse; 
+	CommandBuffer.BeginSecondary(UsageFlags, GetHandle());
+
+	// Have RenderItems sorted by pipeline type
+	// [1] For each Pipeline Type, 
+	    // [2]vkCmdBindPipeline
+		// [3] For each render item of this pipeline type
+			// [4] RenderItem.BuildCommands()
+		 
+
+	CommandBuffer.End();
 }
