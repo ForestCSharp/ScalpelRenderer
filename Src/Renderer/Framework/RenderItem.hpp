@@ -1,5 +1,8 @@
+#pragma once
+
 #include "../Vulkan/VulkanBuffer.h"
 #include "../Vulkan/VulkanCommandBuffer.h"
+#include "../Vulkan/VulkanGraphicsPipeline.h"
 
 //Represents a Renderable Entity (static/skinned meshes, full-screen quad, sprites)
 class RenderItem
@@ -9,12 +12,10 @@ public:
         VertexBuffer(VertexData, VertexDataSize, EBufferType::VertexBuffer),
         IndexBuffer(IndexData, IndexDataSize, EBufferType::IndexBuffer),
         IndexCount(NumIndices)
-    {
+    {}
 
-    }
-
-    //Takes in a command buffer and performs the necessary binds and draw calls for this render item
-    void BuildCommands(VulkanCommandBuffer& CommandBuffer, VulkanGraphicsPipeline& Pipeline, vk::DescriptorSet& DescriptorSet)
+    //Takes in a command buffer and adds the necessary binds and draw calls for this render item
+    void AddCommands(VulkanCommandBuffer& CommandBuffer, VulkanGraphicsPipeline& Pipeline, vk::DescriptorSet& DescriptorSet)
     {
         vk::Buffer VertexBuffers[] = {VertexBuffer.GetHandle()};
         vk::DeviceSize Offsets[] = {0};
@@ -32,4 +33,5 @@ public:
     VulkanBuffer VertexBuffer;
     VulkanBuffer IndexBuffer;
     uint32_t     IndexCount;
+    //TODO: Definition of Vertex input for matching to pipeline
 };

@@ -230,16 +230,22 @@ int main(int, char**)
 		std::vector<VulkanCommandBuffer> CommandBuffers;
 		CommandBuffers.resize(RenderPass.GetFramebuffers().size());
 
-
+		std::vector<std::pair<RenderItem*, VulkanGraphicsPipeline*>> RenderItems;
+		RenderItems.push_back(std::pair<RenderItem*, VulkanGraphicsPipeline*>(&TestRenderItem, &Pipeline));
+		RenderItems.push_back(std::pair<RenderItem*, VulkanGraphicsPipeline*>(&TestRenderItem, &Pipeline));
 
 		//Wrapped in lambda for window resize below
 		auto BuildPrimaryCommandBuffers = [&]()
 		{
+			//TODO: Remove Descriptor Set argument
+			RenderPass.BuildCommandBuffer(RenderItems, DescriptorSet.get());
+
 			for (size_t i = 0; i < CommandBuffers.size(); ++i)
 			{
 				auto& CommandBuffer = CommandBuffers[i];
 				CommandBuffer.Begin();
 
+				//TODO: Iterate over all renderpasses (sorted based on Frame Graph and call function to handle them (see below))
 				//TODO: Function to handle the BeginInfo, BeginRenderPass, ExecuteSecondary, EndRenderPass
 				vk::RenderPassBeginInfo BeginInfo;
 				BeginInfo.renderPass = RenderPass.GetHandle();
@@ -254,16 +260,10 @@ int main(int, char**)
 				BeginInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
 				BeginInfo.pClearValues = ClearValues.data();
 
-				CommandBuffer().beginRenderPass(BeginInfo, vk::SubpassContents::eInline);
-
-					//TODO: Will execute secondary command buffer owned by the render pass we just began here
-
-				CommandBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, Pipeline.GetHandle());
-
-				//Appends Descriptor Set Bind
-				TestRenderItem.BuildCommands(CommandBuffer, Pipeline, DescriptorSet.get());
-
+				CommandBuffer().beginRenderPass(BeginInfo, vk::SubpassContents::eSecondaryCommandBuffers);	
+				CommandBuffer().executeCommands(1, &RenderPass.GetCommandBuffer().GetHandle());
 				CommandBuffer().endRenderPass();
+
 				CommandBuffer.End();
 			}
 		};

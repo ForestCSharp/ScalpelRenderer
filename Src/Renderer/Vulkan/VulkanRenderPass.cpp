@@ -2,7 +2,7 @@
 
 #include "VulkanContext.h"
 #include "VulkanSwapchain.h"
-#include "VulkanCommandBuffer.h"
+#include <functional>
 
 VulkanRenderPass::VulkanRenderPass() : CommandBuffer(true /* bSecondary */)
 {
@@ -95,17 +95,35 @@ void VulkanRenderPass::BuildRenderPass(VulkanSwapchain& Swapchain)
 	//End Framebuffer Creation
 }
 
-void VulkanRenderPass::BuildCommands()
+#include <iostream>
+
+void VulkanRenderPass::BuildCommandBuffer(std::vector<std::pair<RenderItem*, VulkanGraphicsPipeline*>> ItemsToRender, vk::DescriptorSet TEST_DESC_SET) //TODO: Remove desc set test arg
 {
+	// Sort Input array of pairs by pipeline pointer address
+	std::sort(std::begin(ItemsToRender), std::end(ItemsToRender)); //TODO: Test that this is actually sorting by pointer address
+
 	vk::CommandBufferUsageFlags UsageFlags = vk::CommandBufferUsageFlagBits::eRenderPassContinue | vk::CommandBufferUsageFlagBits::eSimultaneousUse; 
 	CommandBuffer.BeginSecondary(UsageFlags, GetHandle());
 
-	// Have RenderItems sorted by pipeline type
-	// [1] For each Pipeline Type, 
-	    // [2]vkCmdBindPipeline
-		// [3] For each render item of this pipeline type
-			// [4] RenderItem.BuildCommands()
-		 
+	VulkanGraphicsPipeline* CurrentPipeline = nullptr;
+	for (auto& ItemAndPipeline : ItemsToRender)
+	{
+		RenderItem* RenderItem = ItemAndPipeline.first;
+		VulkanGraphicsPipeline* Pipeline = ItemAndPipeline.second;
+
+		std::cout << Pipeline << std::endl;
+
+		if (RenderItem == nullptr || Pipeline == nullptr) continue;
+
+		if (Pipeline != CurrentPipeline)
+		{
+			CurrentPipeline = Pipeline;
+			CommandBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, Pipeline->GetHandle());
+		}
+
+		/*TODO: Need to create a descriptor set for this render item and pipeline type */
+		RenderItem->AddCommands(CommandBuffer, *Pipeline, TEST_DESC_SET);
+	}	 
 
 	CommandBuffer.End();
 }
