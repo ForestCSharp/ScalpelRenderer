@@ -9,57 +9,70 @@ VulkanRenderPass::VulkanRenderPass() : CommandBuffer(true /* bSecondary */)
 
 }
 
-void VulkanRenderPass::BuildRenderPass(VulkanSwapchain& Swapchain)
+void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTargets, uint32_t Width, uint32_t Height, uint32_t BackbufferCount)
 {
-	//TODO: Make generic
+	//Note: Attachment Descriptions = Prototype, Framebuffer = Actual references
+	std::vector<vk::AttachmentDescription> AttachmentDescriptions;
+	std::vector<vk::AttachmentReference> ColorAttachmentReferences;
+	vk::AttachmentReference DepthAttachmentReference;
 
-	vk::AttachmentDescription ColorAttachment;
-	ColorAttachment.format = Swapchain.GetSwapchainFormat();
-	ColorAttachment.samples = vk::SampleCountFlagBits::e1;
-	ColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-	ColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
-	ColorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-	ColorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-	ColorAttachment.initialLayout = vk::ImageLayout::eUndefined;
-	ColorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+	std::vector<std::vector<vk::ImageView>> FramebufferImageViewsPerBackbuffer(BackbufferCount);
 
-	vk::AttachmentDescription DepthAttachment;
-	DepthAttachment.format = Swapchain.GetDepthFormat();
-	DepthAttachment.samples = vk::SampleCountFlagBits::e1;
-	DepthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-	DepthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
-	DepthAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-	DepthAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-	DepthAttachment.initialLayout = vk::ImageLayout::eUndefined;
-	DepthAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-	
-	//Color attachment Reference for our subpass
-	vk::AttachmentReference ColorAttachmentRef;
-	ColorAttachmentRef.attachment = 0;
-	ColorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+	//[1] Iterate over attachments and create descriptions and references
+	for (size_t i = 0; i < RenderTargets.size(); ++i)
+	{
+		auto& RenderTarget = RenderTargets[i];
+		assert(RenderTarget->ImageViews.size() > 0);
 
-	//Depth Reference for subpass
-	vk::AttachmentReference DepthAttachmentRef;
-	DepthAttachmentRef.attachment = 1;
-	DepthAttachmentRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		vk::AttachmentDescription AttachmentDescription;
+		AttachmentDescription.format = RenderTarget->Format;
+		AttachmentDescription.samples = vk::SampleCountFlagBits::e1; //TODO: allow multisampling
+		AttachmentDescription.loadOp = RenderTarget->LoadOp;
+		AttachmentDescription.storeOp = RenderTarget->StoreOp;
+		AttachmentDescription.initialLayout = RenderTarget->InitialLayout;
+		AttachmentDescription.finalLayout = RenderTarget->FinalLayout;
+
+		AttachmentDescriptions.push_back(std::move(AttachmentDescription));
+
+		//TODO: Enforce only one depth attachment (per subpass, or renderpass at this point) here
+		if (RenderTarget->bDepthTarget)
+		{
+			DepthAttachmentReference.attachment = i;
+			DepthAttachmentReference.layout = RenderTarget->UsageLayout;
+		}
+		else
+		{
+			vk::AttachmentReference AttachmentReference;
+			AttachmentReference.attachment = i;
+			AttachmentReference.layout = RenderTarget->UsageLayout;
+			ColorAttachmentReferences.push_back(std::move(AttachmentReference));
+		}
+
+		//Add each image view of the render target (1 per backbuffer) to its corresponding framebuffer image view array
+		for (size_t i = 0; i < RenderTarget->ImageViews.size(); ++i)
+		{
+			assert(i < FramebufferImageViewsPerBackbuffer.size());
+			FramebufferImageViewsPerBackbuffer[i].push_back(*RenderTarget->ImageViews[i]);
+		}
+	}
 
 	//Our subpass
 	vk::SubpassDescription Subpass;
 	Subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-	Subpass.colorAttachmentCount = 1;
-	Subpass.pColorAttachments = &ColorAttachmentRef;
-	Subpass.pDepthStencilAttachment = &DepthAttachmentRef;
+	Subpass.colorAttachmentCount = ColorAttachmentReferences.size();
+	Subpass.pColorAttachments = ColorAttachmentReferences.data();
+	Subpass.pDepthStencilAttachment = &DepthAttachmentReference;
 
-	//Array of our two attachments
-	std::vector<vk::AttachmentDescription> Attachments = {ColorAttachment, DepthAttachment}; 
 
 	//The Renderpass itself
 	vk::RenderPassCreateInfo CreateInfo;
-	CreateInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
-	CreateInfo.pAttachments = Attachments.data();
+	CreateInfo.attachmentCount = static_cast<uint32_t>(AttachmentDescriptions.size());
+	CreateInfo.pAttachments = AttachmentDescriptions.data();
 	CreateInfo.subpassCount = 1;
 	CreateInfo.pSubpasses = &Subpass;
 
+/*
+//TODO: Generic way to handle subpass dependencies
 	//Subpass Dependency
 	vk::SubpassDependency Dependency;
 	Dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -67,32 +80,27 @@ void VulkanRenderPass::BuildRenderPass(VulkanSwapchain& Swapchain)
 	Dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	Dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	Dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
-	
+
 	CreateInfo.dependencyCount = 1;
 	CreateInfo.pDependencies = &Dependency;
+*/	
 
 	RenderPass = VulkanContext::Get()->GetDevice().createRenderPassUnique(CreateInfo);
 
-	//Framebuffer Creation
 	Framebuffers.clear();
 
-	std::vector<vk::UniqueImageView>& ImageViews = Swapchain.GetImageViews();
-
-	for (auto& UniqueImageView : ImageViews)
+	for (std::vector<vk::ImageView>& FrameBufferImageViews : FramebufferImageViewsPerBackbuffer)
 	{
-		std::vector<vk::ImageView> attachments = {UniqueImageView.get(), Swapchain.GetDepthView()};
-
 		vk::FramebufferCreateInfo FramebufferCreateInfo;
 		FramebufferCreateInfo.renderPass = GetHandle();
-		FramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		FramebufferCreateInfo.pAttachments = attachments.data();
-		FramebufferCreateInfo.width = Swapchain.GetExtent().width;
-		FramebufferCreateInfo.height = Swapchain.GetExtent().height;
+		FramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(FrameBufferImageViews.size());
+		FramebufferCreateInfo.pAttachments = FrameBufferImageViews.data();
+		FramebufferCreateInfo.width = Width;
+		FramebufferCreateInfo.height = Height;
 		FramebufferCreateInfo.layers = 1;
 
 		Framebuffers.push_back(VulkanContext::Get()->GetDevice().createFramebufferUnique(FramebufferCreateInfo));
 	}
-	//End Framebuffer Creation
 }
 
 #include <iostream>
@@ -110,8 +118,6 @@ void VulkanRenderPass::BuildCommandBuffer(std::vector<std::pair<RenderItem*, Vul
 	{
 		RenderItem* RenderItem = ItemAndPipeline.first;
 		VulkanGraphicsPipeline* Pipeline = ItemAndPipeline.second;
-
-		std::cout << Pipeline << std::endl;
 
 		if (RenderItem == nullptr || Pipeline == nullptr) continue;
 

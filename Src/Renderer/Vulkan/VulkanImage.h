@@ -32,6 +32,8 @@ public:
     vk::DescriptorImageInfo GetDescriptorInfo();
     void CreateDescriptorInfo();
 
+    vk::Format GetFormat() { return ImageFormat; }
+
 protected:
 
     vk::UniqueImage Image;

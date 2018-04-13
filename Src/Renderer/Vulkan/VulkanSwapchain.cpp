@@ -29,7 +29,7 @@ void VulkanSwapchain::CreateSwapchain()
 	CreateInfo.surface = VulkanContext::Get()->GetSurface();
 	CreateInfo.minImageCount = ImageCount;
 	CreateInfo.imageFormat = DesiredFormat.format;
-	SwapchainImageFormat = CreateInfo.imageFormat; //Store for later
+	ColorFormat = CreateInfo.imageFormat; //Store for later
 	CreateInfo.imageColorSpace = DesiredFormat.colorSpace;
 	CreateInfo.imageExtent = SurfaceCapabilities.currentExtent;
 	SwapchainExtent = CreateInfo.imageExtent; //Store for later
@@ -123,7 +123,7 @@ void VulkanSwapchain::CreateImageViews()
 		//Basic Info
 		CreateInfo.image = SwapchainImages[i];
 		CreateInfo.viewType = vk::ImageViewType::e2D;
-		CreateInfo.format = SwapchainImageFormat;
+		CreateInfo.format = ColorFormat;
 
 		//Channel Mapping
 		CreateInfo.components.r = vk::ComponentSwizzle::eIdentity;

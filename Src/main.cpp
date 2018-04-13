@@ -110,8 +110,36 @@ int main(int, char**)
 		VulkanSwapchain Swapchain;
 		Swapchain.BuildSwapchain();
 
+		//Swapchain Render Target Setup (this will be handled by Render Graph)
+		VulkanRenderTarget ColorTarget;
+		for (auto& UniqueImageView : Swapchain.GetImageViews())
+		{
+			ColorTarget.ImageViews.push_back(&UniqueImageView.get());
+		}
+		ColorTarget.Format = Swapchain.GetColorFormat();
+		ColorTarget.LoadOp = vk::AttachmentLoadOp::eClear;
+		ColorTarget.StoreOp = vk::AttachmentStoreOp::eStore;
+		ColorTarget.InitialLayout = vk::ImageLayout::eUndefined;
+		ColorTarget.UsageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		ColorTarget.FinalLayout = vk::ImageLayout::ePresentSrcKHR;
+
+		VulkanRenderTarget DepthTarget;
+		for (auto& UniqueImageView : Swapchain.GetImageViews())
+		{
+			DepthTarget.ImageViews.push_back(&Swapchain.GetDepthView());
+		}
+		DepthTarget.Format = Swapchain.GetDepthFormat();
+		DepthTarget.LoadOp = vk::AttachmentLoadOp::eClear;
+		DepthTarget.StoreOp = vk::AttachmentStoreOp::eDontCare;
+		DepthTarget.InitialLayout = vk::ImageLayout::eUndefined;
+		DepthTarget.UsageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		DepthTarget.FinalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		DepthTarget.bDepthTarget = true;
+
+		std::vector<VulkanRenderTarget*> RenderTargets = {&ColorTarget, &DepthTarget};
+
 		VulkanRenderPass RenderPass;
-		RenderPass.BuildRenderPass(Swapchain);
+		RenderPass.BuildRenderPass(RenderTargets, Swapchain.GetExtent().width, Swapchain.GetExtent().height, Swapchain.GetImageViews().size());
 
 		RenderItem TestRenderItem((void*) vertices.data(), sizeof(vertices[0]) * vertices.size(),
 								  (void*) indices.data(), sizeof(indices[0]) * indices.size(), static_cast<uint32_t>(indices.size()));
@@ -142,7 +170,7 @@ int main(int, char**)
 			UniformBufferObject Ubo;
 			Ubo.model = glm::rotate(glm::mat4(1.0f), TotalTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 			Ubo.view = glm::lookAt(CameraPosition, Target, UpVector);
-			Ubo.proj =  glm::perspective(glm::radians(60.0f), Swapchain.GetExtent().width / (float) Swapchain.GetExtent().height, 0.001f, 10000.0f);
+			Ubo.proj = glm::perspective(glm::radians(60.0f), Swapchain.GetExtent().width / (float) Swapchain.GetExtent().height, 0.001f, 10000.0f);
 			Ubo.proj[1][1] *= -1;
 
 			Uniform.UpdateUniformData(&Ubo, sizeof(UniformBufferObject));
@@ -246,7 +274,11 @@ int main(int, char**)
 				CommandBuffer.Begin();
 
 				//TODO: Iterate over all renderpasses (sorted based on Frame Graph and call function to handle them (see below))
+				//TODO: The above will also need to handle barriers between certain renderpasses when necessary
 				//TODO: Function to handle the BeginInfo, BeginRenderPass, ExecuteSecondary, EndRenderPass
+
+				//RenderPass execution:
+
 				vk::RenderPassBeginInfo BeginInfo;
 				BeginInfo.renderPass = RenderPass.GetHandle();
 				BeginInfo.framebuffer = RenderPass.GetFramebuffers()[i].get();
@@ -276,13 +308,13 @@ int main(int, char**)
 		int Width, Height;
 		glfwGetWindowSize(window, &Width, &Height);
 
-		// Main loop
 		double LastTime = 0.0;
 		float deltaSeconds = 0.0;
 		
 		double LastMouseX, LastMouseY;
 		glfwGetCursorPos(window, &LastMouseX, &LastMouseY);
 
+		// Main loop
 		while (!glfwWindowShouldClose(window))
 		{
 			glfwPollEvents();
@@ -322,7 +354,7 @@ int main(int, char**)
 
 				Swapchain.BuildSwapchain();
 				
-				RenderPass.BuildRenderPass(Swapchain);
+				RenderPass.BuildRenderPass(RenderTargets, Swapchain.GetExtent().width, Swapchain.GetExtent().height, Swapchain.GetImageViews().size());
 
 				Pipeline.Viewport.width = (float) Swapchain.GetExtent().width;
 				Pipeline.Viewport.height = (float) Swapchain.GetExtent().height;
@@ -330,18 +362,18 @@ int main(int, char**)
 				Pipeline.BuildPipeline(RenderPass, ASSET_DIR + std::string("/shaders/vert.spv"), ASSET_DIR + std::string("/shaders/frag.spv"));
 
 				BuildPrimaryCommandBuffers();
-
-				Width = NewWidth;
-				Height = NewHeight;
 			};
 
 			//Handle Resize (can still try to acquire our image this frame)
 			if (NewWidth != Width || NewHeight != Height)
 			{
+				Width = NewWidth;
+				Height = NewHeight;
 				RebuildSwapchain();
 			}
 
 			auto NextImage = Context->GetDevice().acquireNextImageKHR(Swapchain.GetHandle(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphore.get(), vk::Fence());
+			
 			if (NextImage.result == vk::Result::eErrorOutOfDateKHR || NextImage.result == vk::Result::eSuboptimalKHR)
 			{
 				//Acquiring Image failed: Need to rebuild our Out-Of-Date or SubOptimal swapchain

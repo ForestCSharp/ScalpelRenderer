@@ -33,5 +33,7 @@ public:
     VulkanBuffer VertexBuffer;
     VulkanBuffer IndexBuffer;
     uint32_t     IndexCount;
+    
     //TODO: Definition of Vertex input for matching to pipeline
+    //TODO: OR just a std::set of Pipeline Pointers pertaining to this particular RenderItem
 };
