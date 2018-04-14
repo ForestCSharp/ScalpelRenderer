@@ -5,6 +5,12 @@
 
 class std::string;
 
+struct DescriptorData
+{
+	vk::UniqueDescriptorPool Pool;
+	std::vector<vk::UniqueDescriptorSet> Sets;
+};
+
 class VulkanGraphicsPipeline
 {
 public:
@@ -17,7 +23,7 @@ public:
 	vk::PipelineLayout GetLayout() { return PipelineLayout.get(); }
 
 	//Creates a descriptor pool and allocates descriptor sets for the entirety of this Pipeline's descriptor bindings
-	std::pair<vk::UniqueDescriptorPool,std::vector<vk::UniqueDescriptorSet>> AllocateDescriptorSets(uint32_t NumSets);
+	DescriptorData AllocateDescriptorSets(uint32_t NumSets);
 	//Create a descriptor pool used to allocate up to MaxSets descriptor sets
 	vk::UniqueDescriptorPool CreateDescriptorPool(uint32_t MaxSets);
 

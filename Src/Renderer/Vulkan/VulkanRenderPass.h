@@ -4,13 +4,13 @@
 #include <map>
 #include <vulkan/vulkan.hpp>
 #include "VulkanCommandBuffer.h"
-#include "../Framework/RenderItem.hpp"
+#include "RenderItem.hpp"
 #include "VulkanGraphicsPipeline.h"
 #include "VulkanImage.h"
 
 struct VulkanRenderTarget
 {
-	//TODO: 1 Image per back buffer
+	//1 Image per back buffer
 	std::vector<vk::ImageView*> ImageViews;
 	vk::Format Format;
 
@@ -40,7 +40,7 @@ public:
 	void BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTargets, uint32_t Width, uint32_t Height, uint32_t BackbufferCount);
 
 	//Builds a secondary command buffer for this render pass
-	void BuildCommandBuffer(std::vector<std::pair<RenderItem*, VulkanGraphicsPipeline*>> ItemsToRender, vk::DescriptorSet TEST_DESC_SET);
+	void BuildCommandBuffer(std::vector<std::pair<RenderItem*, VulkanGraphicsPipeline*>> ItemsToRender, std::vector<vk::WriteDescriptorSet> TEST_DESCRIPTOR_WRITES);
 	VulkanCommandBuffer& GetCommandBuffer() { return CommandBuffer; }
 
 	//TODO: Function that Adds commands for this RenderPass to input Command Buffer

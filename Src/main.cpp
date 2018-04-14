@@ -17,7 +17,7 @@
 #include "Renderer/Vulkan/VulkanUniform.h"
 #include "Renderer/Vulkan/VulkanImage.h"
 
-#include "Renderer/Framework/RenderItem.hpp"
+#include "Renderer/Vulkan/RenderItem.hpp"
 
 
 #include <GLFW\glfw3.h>
@@ -235,10 +235,10 @@ int main(int, char**)
 		   and "first" and "second" don't really do a good job of describing what they hold */
 		//Maybe something like struct DescriptorData { has the pool and array of sets alloc'd from that pool };
 		auto DescriptorPoolAndSets = Pipeline.AllocateDescriptorSets(1);
-		vk::UniqueDescriptorSet& DescriptorSet = DescriptorPoolAndSets.second[0]; //Just for ease of access later
+		vk::UniqueDescriptorSet& DescriptorSet = DescriptorPoolAndSets.Sets[0]; //Just for ease of access later
 
 		//Write to our descriptor set
-		std::array<vk::WriteDescriptorSet,2> DescriptorWrites;
+		std::vector<vk::WriteDescriptorSet> DescriptorWrites(2);
 		DescriptorWrites[0].dstSet = DescriptorSet.get();
 		DescriptorWrites[0].dstBinding = 0;
 		DescriptorWrites[0].dstArrayElement = 0;
@@ -259,14 +259,16 @@ int main(int, char**)
 		CommandBuffers.resize(RenderPass.GetFramebuffers().size());
 
 		std::vector<std::pair<RenderItem*, VulkanGraphicsPipeline*>> RenderItems;
-		RenderItems.push_back(std::pair<RenderItem*, VulkanGraphicsPipeline*>(&TestRenderItem, &Pipeline));
-		RenderItems.push_back(std::pair<RenderItem*, VulkanGraphicsPipeline*>(&TestRenderItem, &Pipeline));
+		for (int i = 0; i < 3; ++i)
+		{
+			RenderItems.push_back(std::pair<RenderItem*, VulkanGraphicsPipeline*>(&TestRenderItem, &Pipeline));
+		}
 
 		//Wrapped in lambda for window resize below
 		auto BuildPrimaryCommandBuffers = [&]()
 		{
-			//TODO: Remove Descriptor Set argument
-			RenderPass.BuildCommandBuffer(RenderItems, DescriptorSet.get());
+			//TODO: Remove Descriptor Writes argument
+			RenderPass.BuildCommandBuffer(RenderItems, DescriptorWrites);
 
 			for (size_t i = 0; i < CommandBuffers.size(); ++i)
 			{

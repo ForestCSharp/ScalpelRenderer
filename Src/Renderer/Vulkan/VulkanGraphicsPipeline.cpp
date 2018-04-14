@@ -197,18 +197,20 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 	spvReflectDestroyShaderModule(&FragmentShaderReflection);
 }
 
-std::pair<vk::UniqueDescriptorPool,std::vector<vk::UniqueDescriptorSet>> VulkanGraphicsPipeline::AllocateDescriptorSets(uint32_t NumSets)
+DescriptorData VulkanGraphicsPipeline::AllocateDescriptorSets(uint32_t NumSets)
 {
-	vk::UniqueDescriptorPool DescriptorPool = CreateDescriptorPool(NumSets);
+	DescriptorData NewDescriptorData;
+
+	NewDescriptorData.Pool = CreateDescriptorPool(NumSets);
 
 	vk::DescriptorSetAllocateInfo DescriptorSetAllocInfo;
-	DescriptorSetAllocInfo.descriptorPool = DescriptorPool.get();
+	DescriptorSetAllocInfo.descriptorPool = NewDescriptorData.Pool.get();
 	DescriptorSetAllocInfo.descriptorSetCount = NumSets;
 	DescriptorSetAllocInfo.pSetLayouts = &(DescriptorSetLayout.get());
 
-	std::vector<vk::UniqueDescriptorSet> DescriptorSets = VulkanContext::Get()->GetDevice().allocateDescriptorSetsUnique(DescriptorSetAllocInfo);
+	NewDescriptorData.Sets = VulkanContext::Get()->GetDevice().allocateDescriptorSetsUnique(DescriptorSetAllocInfo);
 
-	return std::pair<vk::UniqueDescriptorPool,std::vector<vk::UniqueDescriptorSet>>(std::move(DescriptorPool), std::move(DescriptorSets));
+	return NewDescriptorData;
 }
 
 vk::UniqueDescriptorPool VulkanGraphicsPipeline::CreateDescriptorPool(uint32_t MaxSets)
