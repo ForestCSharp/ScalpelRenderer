@@ -10,7 +10,7 @@ public:
 
     VulkanUniform(vk::DeviceSize BufferSize);
     void UpdateUniformData(void* Data, vk::DeviceSize DataSize);
-    const vk::DescriptorBufferInfo GetDescriptorInfo() const;
+    const vk::DescriptorBufferInfo& GetDescriptorInfo() const;
 
 protected:
 

@@ -21,7 +21,7 @@ void VulkanUniform::UpdateUniformData(void* Data, vk::DeviceSize DataSize)
 	Device.unmapMemory(UniformMemory.get());
 }
 
-const vk::DescriptorBufferInfo VulkanUniform::GetDescriptorInfo() const
+const vk::DescriptorBufferInfo& VulkanUniform::GetDescriptorInfo() const
 {
     return DescriptorInfo;
 }

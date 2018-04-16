@@ -17,7 +17,7 @@
 #include "Renderer/Vulkan/VulkanUniform.h"
 #include "Renderer/Vulkan/VulkanImage.h"
 
-#include "Renderer/Vulkan/RenderItem.hpp"
+#include "Renderer/Vulkan/VulkanRenderItem.hpp"
 
 
 #include <GLFW\glfw3.h>
@@ -141,10 +141,6 @@ int main(int, char**)
 		VulkanRenderPass RenderPass;
 		RenderPass.BuildRenderPass(RenderTargets, Swapchain.GetExtent().width, Swapchain.GetExtent().height, Swapchain.GetImageViews().size());
 
-		RenderItem TestRenderItem((void*) vertices.data(), sizeof(vertices[0]) * vertices.size(),
-								  (void*) indices.data(), sizeof(indices[0]) * indices.size(), static_cast<uint32_t>(indices.size()));
-		
-
 		std::string ImageName(ASSET_DIR + std::string("/textures/test.png"));
 		VulkanImage Image(ImageName);
 		vk::ImageView ImageView = Image.GetImageView();
@@ -157,6 +153,14 @@ int main(int, char**)
 		};
 
 		VulkanUniform UniformBuffer(sizeof(UniformBufferObject));
+
+		VulkanRenderItem TestVulkanRenderItem((void*) vertices.data(), sizeof(vertices[0]) * vertices.size(),
+								  (void*) indices.data(), sizeof(indices[0]) * indices.size(), static_cast<uint32_t>(indices.size()));
+		
+		//Reference some resources in our render item 
+		//TODO: Use name to key into binding using pipeline's descriptor info
+		TestVulkanRenderItem.AddImageResource("NameDoesntMatterYet", Image.GetDescriptorInfo());
+		TestVulkanRenderItem.AddBufferResource("NameDontNotMatter", UniformBuffer.GetDescriptorInfo());
 
 		glm::vec3 CameraPosition(0.0f, 2.0f, 2.0f);
 		glm::vec3 Target(0,0,0);
@@ -230,45 +234,20 @@ int main(int, char**)
 		
 		Pipeline.BuildPipeline(RenderPass, ASSET_DIR + std::string("/shaders/vert.spv"), ASSET_DIR + std::string("/shaders/frag.spv"));
 		/* ... End Pipeline Setup ... */
-	
-		/*TODO: std::pair<vk::UniqueDescriptorPool,std::vector<vk::UniqueDescriptorSet>> is a bit verbose, 
-		   and "first" and "second" don't really do a good job of describing what they hold */
-		//Maybe something like struct DescriptorData { has the pool and array of sets alloc'd from that pool };
-		auto DescriptorPoolAndSets = Pipeline.AllocateDescriptorSets(1);
-		vk::UniqueDescriptorSet& DescriptorSet = DescriptorPoolAndSets.Sets[0]; //Just for ease of access later
-
-		//Write to our descriptor set
-		std::vector<vk::WriteDescriptorSet> DescriptorWrites(2);
-		DescriptorWrites[0].dstSet = DescriptorSet.get();
-		DescriptorWrites[0].dstBinding = 0;
-		DescriptorWrites[0].dstArrayElement = 0;
-		DescriptorWrites[0].descriptorType = vk::DescriptorType::eUniformBuffer;
-		DescriptorWrites[0].descriptorCount = 1;
-		DescriptorWrites[0].pBufferInfo = &UniformBuffer.GetDescriptorInfo();
-
-		DescriptorWrites[1].dstSet = DescriptorSet.get();
-		DescriptorWrites[1].dstBinding = 1;
-		DescriptorWrites[1].dstArrayElement = 0;
-		DescriptorWrites[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		DescriptorWrites[1].descriptorCount = 1;
-		DescriptorWrites[1].pImageInfo = &Image.GetDescriptorInfo();
-
-		Context->GetDevice().updateDescriptorSets(DescriptorWrites, nullptr);
 
 		std::vector<VulkanCommandBuffer> CommandBuffers;
 		CommandBuffers.resize(RenderPass.GetFramebuffers().size());
 
-		std::vector<std::pair<RenderItem*, VulkanGraphicsPipeline*>> RenderItems;
-		for (int i = 0; i < 3; ++i)
+		std::vector<std::pair<VulkanRenderItem*, VulkanGraphicsPipeline*>> VulkanRenderItems;
+		for (int i = 0; i < 1000; ++i)
 		{
-			RenderItems.push_back(std::pair<RenderItem*, VulkanGraphicsPipeline*>(&TestRenderItem, &Pipeline));
+			VulkanRenderItems.push_back(std::pair<VulkanRenderItem*, VulkanGraphicsPipeline*>(&TestVulkanRenderItem, &Pipeline));
 		}
 
 		//Wrapped in lambda for window resize below
 		auto BuildPrimaryCommandBuffers = [&]()
 		{
-			//TODO: Remove Descriptor Writes argument
-			RenderPass.BuildCommandBuffer(RenderItems, DescriptorWrites);
+			RenderPass.BuildCommandBuffer(VulkanRenderItems);
 
 			for (size_t i = 0; i < CommandBuffers.size(); ++i)
 			{

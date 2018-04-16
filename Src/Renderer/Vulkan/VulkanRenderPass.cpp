@@ -105,7 +105,7 @@ void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTa
 
 #include <iostream>
 
-void VulkanRenderPass::BuildCommandBuffer(std::vector<std::pair<RenderItem*, VulkanGraphicsPipeline*>> ItemsToRender, std::vector<vk::WriteDescriptorSet> TEST_DESCRIPTOR_WRITES) //TODO: Remove desc set test arg
+void VulkanRenderPass::BuildCommandBuffer(std::vector<std::pair<VulkanRenderItem*, VulkanGraphicsPipeline*>> ItemsToRender)
 {
 	// Sort Input array of pairs by pipeline pointer address
 	std::sort(std::begin(ItemsToRender), std::end(ItemsToRender)); //TODO: Test that this is actually sorting by pointer address
@@ -116,7 +116,7 @@ void VulkanRenderPass::BuildCommandBuffer(std::vector<std::pair<RenderItem*, Vul
 	VulkanGraphicsPipeline* CurrentPipeline = nullptr;
 	for (auto& ItemAndPipeline : ItemsToRender)
 	{
-		RenderItem* RenderItem = ItemAndPipeline.first;
+		VulkanRenderItem* RenderItem = ItemAndPipeline.first;
 		VulkanGraphicsPipeline* Pipeline = ItemAndPipeline.second;
 
 		if (RenderItem == nullptr || Pipeline == nullptr) continue;
@@ -128,7 +128,7 @@ void VulkanRenderPass::BuildCommandBuffer(std::vector<std::pair<RenderItem*, Vul
 		}
 
 		/*TODO: Need to create a descriptor set for this render item and pipeline type */
-		RenderItem->AddCommands(CommandBuffer, Pipeline, TEST_DESCRIPTOR_WRITES);
+		RenderItem->AddCommands(CommandBuffer, Pipeline);
 	}	 
 
 	CommandBuffer.End();

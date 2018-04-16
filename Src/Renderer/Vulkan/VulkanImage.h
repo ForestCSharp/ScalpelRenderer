@@ -29,7 +29,7 @@ public:
     void CreateSampler();
 
     //Optional Descriptor Info
-    vk::DescriptorImageInfo GetDescriptorInfo();
+    vk::DescriptorImageInfo& GetDescriptorInfo();
     void CreateDescriptorInfo();
 
     vk::Format GetFormat() { return ImageFormat; }

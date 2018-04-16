@@ -4,7 +4,7 @@
 #include <map>
 #include <vulkan/vulkan.hpp>
 #include "VulkanCommandBuffer.h"
-#include "RenderItem.hpp"
+#include "VulkanRenderItem.hpp"
 #include "VulkanGraphicsPipeline.h"
 #include "VulkanImage.h"
 
@@ -40,7 +40,7 @@ public:
 	void BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTargets, uint32_t Width, uint32_t Height, uint32_t BackbufferCount);
 
 	//Builds a secondary command buffer for this render pass
-	void BuildCommandBuffer(std::vector<std::pair<RenderItem*, VulkanGraphicsPipeline*>> ItemsToRender, std::vector<vk::WriteDescriptorSet> TEST_DESCRIPTOR_WRITES);
+	void BuildCommandBuffer(std::vector<std::pair<VulkanRenderItem*, VulkanGraphicsPipeline*>> ItemsToRender);
 	VulkanCommandBuffer& GetCommandBuffer() { return CommandBuffer; }
 
 	//TODO: Function that Adds commands for this RenderPass to input Command Buffer

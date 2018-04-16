@@ -27,6 +27,8 @@ public:
 	//Create a descriptor pool used to allocate up to MaxSets descriptor sets
 	vk::UniqueDescriptorPool CreateDescriptorPool(uint32_t MaxSets);
 
+	std::vector<vk::DescriptorSetLayoutBinding>& GetDescriptorBindings() { return DescriptorBindings; }
+
 protected: //Internal Pipeline Member variables
 
 	vk::UniquePipeline GraphicsPipeline;

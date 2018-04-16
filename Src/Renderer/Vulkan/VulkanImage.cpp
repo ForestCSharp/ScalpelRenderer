@@ -218,7 +218,7 @@ void VulkanImage::CreateSampler()
     ImageSampler = Device.createSamplerUnique(SamplerInfo);
 }
 
-vk::DescriptorImageInfo VulkanImage::GetDescriptorInfo()
+vk::DescriptorImageInfo& VulkanImage::GetDescriptorInfo()
 {
     if (!bDescriptorInfoBuilt)
     {
