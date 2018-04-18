@@ -2,7 +2,6 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <map>
 #include <algorithm>
 
 #include "VulkanContext.h"
@@ -95,6 +94,7 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 	CreateInfo.pStages = ShaderStages;
 
 	std::map<uint32_t, vk::DescriptorSetLayoutBinding> DescriptorBindingsMap;
+	DescriptorBindingsReflection.clear();
 	
 	//Lambda for building up list of descriptors using its ReflectionModule and ShaderStage
 	auto AddDescriptorBindingsFromShaderStage = [&] (const SpvReflectShaderModule* ShaderReflectionModule, const vk::ShaderStageFlagBits ShaderStage)
@@ -132,6 +132,9 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 						DescriptorBinding.stageFlags = ShaderStage;
 
 						DescriptorBindingsMap.emplace(DescriptorBinding.binding, DescriptorBinding);
+
+						//Also store our reflection data, keyed by binding name
+						DescriptorBindingsReflection.emplace(std::string(ReflectionDescriptorBinding->name), *ReflectionDescriptorBinding);
 					}
 			}
 		}
@@ -144,7 +147,7 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 	DescriptorBindings.clear();
 	for (auto& Element : DescriptorBindingsMap)
 	{
-		DescriptorBindings.push_back(Element.second);
+		DescriptorBindings.push_back(std::move(Element.second));
 	}
 
 	vk::DescriptorSetLayoutCreateInfo DescriptorLayoutCreateInfo;

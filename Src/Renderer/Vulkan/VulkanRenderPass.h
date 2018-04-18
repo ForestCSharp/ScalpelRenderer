@@ -43,8 +43,6 @@ public:
 	void BuildCommandBuffer(std::vector<std::pair<VulkanRenderItem*, VulkanGraphicsPipeline*>> ItemsToRender);
 	VulkanCommandBuffer& GetCommandBuffer() { return CommandBuffer; }
 
-	//TODO: Function that Adds commands for this RenderPass to input Command Buffer
-
 protected:
 
 	vk::UniqueRenderPass RenderPass;

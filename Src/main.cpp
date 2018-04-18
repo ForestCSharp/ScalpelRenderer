@@ -157,11 +157,12 @@ int main(int, char**)
 		VulkanRenderItem TestVulkanRenderItem((void*) vertices.data(), sizeof(vertices[0]) * vertices.size(),
 								  (void*) indices.data(), sizeof(indices[0]) * indices.size(), static_cast<uint32_t>(indices.size()));
 		
-		//Reference some resources in our render item 
-		//TODO: Use name to key into binding using pipeline's descriptor info
-		TestVulkanRenderItem.AddImageResource("NameDoesntMatterYet", Image.GetDescriptorInfo());
-		TestVulkanRenderItem.AddBufferResource("NameDontNotMatter", UniformBuffer.GetDescriptorInfo());
-
+		//Reference some resources in our render item
+		TestVulkanRenderItem.AddBufferResource("ubo", UniformBuffer.GetDescriptorInfo());
+		TestVulkanRenderItem.AddImageResource("texSampler", Image.GetDescriptorInfo());
+		/*TODO: FIXME: Currently it will result in a crash if the RenderItem doesn't have a resource 
+				for every descriptor in a descriptor set for a given pipeline */
+		
 		glm::vec3 CameraPosition(0.0f, 2.0f, 2.0f);
 		glm::vec3 Target(0,0,0);
 		const glm::vec3 UpVector(0,0,1);

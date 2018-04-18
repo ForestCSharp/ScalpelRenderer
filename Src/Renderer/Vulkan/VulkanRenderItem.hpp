@@ -4,6 +4,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanGraphicsPipeline.h"
+#include "spirv_reflect.h"
 
 #include <map>
 
@@ -20,6 +21,8 @@ public:
     //Takes in a command buffer and adds the necessary binds and draw calls for this render item
     void AddCommands(VulkanCommandBuffer& CommandBuffer, VulkanGraphicsPipeline* Pipeline)
     {
+        assert(Pipeline != nullptr); //TODO: make pipeline a reference
+
         vk::Buffer VertexBuffers[] = {VertexBuffer.GetHandle()};
         vk::DeviceSize Offsets[] = {0};
 
@@ -32,10 +35,7 @@ public:
             
             //TODO: Need way to update descriptor set / fill it with meaningful data (currently hard coded for testing)
             auto& DescriptorSet = FoundDescriptorData->second.Sets[0].get();
-            UpdateDescriptorSet(DescriptorSet);
-            // TEST_DESCRIPTOR_WRITES[0].dstSet = DescriptorSet;
-            // TEST_DESCRIPTOR_WRITES[1].dstSet = DescriptorSet;
-            // VulkanContext::Get()->GetDevice().updateDescriptorSets(TEST_DESCRIPTOR_WRITES, 0);
+            UpdateDescriptorSet(DescriptorSet, *Pipeline);
         }
         auto& DescriptorSet = FoundDescriptorData->second.Sets[0].get();
 
@@ -49,33 +49,44 @@ public:
         CommandBuffer().drawIndexed(IndexCount, 1, 0, 0, 0);
     }
 
-    void UpdateDescriptorSet(vk::DescriptorSet& DescriptorSet)
+    void UpdateDescriptorSet(vk::DescriptorSet& DescriptorSet, VulkanGraphicsPipeline& Pipeline)
     {
         //TODO: Use name to key into binding using pipeline's descriptor info
+        auto& BindingReflectionMap = Pipeline.GetDescriptorReflection();
 
         std::vector<vk::WriteDescriptorSet> DescriptorWrites;
         for (auto& ImageResource : ImageResources)
         {
-            vk::WriteDescriptorSet ImageWrite;          
-            ImageWrite.dstSet = DescriptorSet;
-            ImageWrite.dstBinding = 1; //TODO: Need to store in map (or fetch by name)
-            ImageWrite.dstArrayElement = 0;
-            ImageWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-            ImageWrite.descriptorCount = 1;
-            ImageWrite.pImageInfo = &ImageResource.second;
-            DescriptorWrites.push_back(std::move(ImageWrite));
+            //Find Pipeline Descriptor Binding by name
+            auto& BindingReflection = BindingReflectionMap.find(ImageResource.first);
+            if (BindingReflection != BindingReflectionMap.end())
+            {
+                vk::WriteDescriptorSet ImageWrite;          
+                ImageWrite.dstSet = DescriptorSet;
+                ImageWrite.dstBinding = BindingReflection->second.binding;
+                ImageWrite.dstArrayElement = 0;
+                ImageWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+                ImageWrite.descriptorCount = 1;
+                ImageWrite.pImageInfo = &ImageResource.second;
+                DescriptorWrites.push_back(std::move(ImageWrite));
+            }
         }
 
         for (auto& BufferResource : BufferResources)
         {
-            vk::WriteDescriptorSet BufferWrite;
-            BufferWrite.dstSet = DescriptorSet;
-            BufferWrite.dstBinding = 0; //TODO: Need to store in map
-            BufferWrite.dstArrayElement = 0;
-            BufferWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-            BufferWrite.descriptorCount = 1;
-            BufferWrite.pBufferInfo = &BufferResource.second;
-            DescriptorWrites.push_back(std::move(BufferWrite));
+            //Find Pipeline Descriptor Binding
+            auto& BindingReflection = BindingReflectionMap.find(BufferResource.first);
+            if (BindingReflection != BindingReflectionMap.end())
+            {
+                vk::WriteDescriptorSet BufferWrite;
+                BufferWrite.dstSet = DescriptorSet;
+                BufferWrite.dstBinding = BindingReflection->second.binding;
+                BufferWrite.dstArrayElement = 0;
+                BufferWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+                BufferWrite.descriptorCount = 1;
+                BufferWrite.pBufferInfo = &BufferResource.second;
+                DescriptorWrites.push_back(std::move(BufferWrite));
+            }
         }
 
         VulkanContext::Get()->GetDevice().updateDescriptorSets(DescriptorWrites, 0);
@@ -84,19 +95,8 @@ public:
     VulkanBuffer VertexBuffer;
     VulkanBuffer IndexBuffer;
     uint32_t     IndexCount;
-    
-    //TODO: Definition of Vertex input for matching to pipeline
-    //TODO: OR just a std::set of Pipeline Pointers pertaining to this particular RenderItem
 
     std::map<VulkanGraphicsPipeline*, DescriptorData> PipelineDescriptors;
-
-    struct cmp_str
-    {
-        bool operator()(const char* a, const char* b)
-        {
-            return std::strcmp(a, b) < 0;
-        }
-    };
 
     void AddImageResource(const char* Name, vk::DescriptorImageInfo DescriptorImageInfo) 
     {
@@ -108,6 +108,6 @@ public:
         BufferResources.emplace(Name, DescriptorBufferInfo);
     }
 
-    std::map<const char *, vk::DescriptorImageInfo, cmp_str>  ImageResources;
-    std::map<const char *, vk::DescriptorBufferInfo, cmp_str> BufferResources;
+    std::map<std::string, vk::DescriptorImageInfo>  ImageResources;
+    std::map<std::string, vk::DescriptorBufferInfo> BufferResources;
 };

@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.hpp>
 #include <vector>
+#include <map>
 
 class std::string;
 
@@ -27,11 +28,9 @@ public:
 	//Create a descriptor pool used to allocate up to MaxSets descriptor sets
 	vk::UniqueDescriptorPool CreateDescriptorPool(uint32_t MaxSets);
 
+	//TODO: Store all of this in one data structure
 	std::vector<vk::DescriptorSetLayoutBinding>& GetDescriptorBindings() { return DescriptorBindings; }
-
-protected: //Internal Pipeline Member variables
-
-	vk::UniquePipeline GraphicsPipeline;
+	std::map<std::string, struct SpvReflectDescriptorBinding>& GetDescriptorReflection() { return DescriptorBindingsReflection; }
 
 public: //Shader Stage Functions
 
@@ -67,8 +66,14 @@ public://Fixed Function Pipeline State
 	std::vector<vk::DynamicState> DynamicStates;
 
 	vk::UniqueDescriptorSetLayout DescriptorSetLayout;
+
 	std::vector<vk::DescriptorSetLayoutBinding> DescriptorBindings;
+	std::map<std::string, struct SpvReflectDescriptorBinding> DescriptorBindingsReflection;
 
 	vk::PipelineLayoutCreateInfo PipelineLayoutCreateInfo;
 	vk::UniquePipelineLayout PipelineLayout;
+
+protected: //Internal Pipeline Member variables
+
+	vk::UniquePipeline GraphicsPipeline;
 };
