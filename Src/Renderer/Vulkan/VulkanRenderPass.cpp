@@ -86,6 +86,8 @@ void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTa
 */	
 
 	RenderPass = VulkanContext::Get()->GetDevice().createRenderPassUnique(CreateInfo);
+	Extent.width = Width;
+	Extent.height = Height;
 
 	Framebuffers.clear();
 
@@ -108,7 +110,8 @@ void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTa
 void VulkanRenderPass::BuildCommandBuffer(std::vector<std::pair<VulkanRenderItem*, VulkanGraphicsPipeline*>> ItemsToRender)
 {
 	// Sort Input array of pairs by pipeline pointer address
-	std::sort(std::begin(ItemsToRender), std::end(ItemsToRender)); //TODO: Test that this is actually sorting by pointer address
+	//TODO: Sort by pipeline
+	std::sort(std::begin(ItemsToRender), std::end(ItemsToRender));
 
 	vk::CommandBufferUsageFlags UsageFlags = vk::CommandBufferUsageFlagBits::eRenderPassContinue | vk::CommandBufferUsageFlagBits::eSimultaneousUse; 
 	CommandBuffer.BeginSecondary(UsageFlags, GetHandle());
@@ -132,4 +135,24 @@ void VulkanRenderPass::BuildCommandBuffer(std::vector<std::pair<VulkanRenderItem
 	}	 
 
 	CommandBuffer.End();
+}
+
+void VulkanRenderPass::RecordCommands(VulkanCommandBuffer& CommandBuffer, int FrameIndex) 
+{
+	//TODO: Clear Values shouldn't be hard coded
+	vk::ClearColorValue ClearColor(std::array<float, 4>{0.39f, 0.58f, 0.93f, 1.0f});
+	vk::ClearDepthStencilValue ClearDepth(1.0f, 0);
+	std::vector<vk::ClearValue> ClearValues = {ClearColor, ClearDepth};
+
+	vk::RenderPassBeginInfo BeginInfo;
+	BeginInfo.renderPass = GetHandle();
+	BeginInfo.framebuffer = GetFramebuffers()[FrameIndex].get();
+	BeginInfo.renderArea.offset = {0,0};
+	BeginInfo.renderArea.extent = Extent;	
+	BeginInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
+	BeginInfo.pClearValues = ClearValues.data();
+
+	CommandBuffer().beginRenderPass(BeginInfo, vk::SubpassContents::eSecondaryCommandBuffers);	
+	CommandBuffer().executeCommands(1, &GetCommandBuffer().GetHandle());
+	CommandBuffer().endRenderPass();
 }

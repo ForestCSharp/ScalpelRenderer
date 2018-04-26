@@ -18,17 +18,11 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-add_subdirectory (${LIB_DIRECTORY}/glfw)
+add_subdirectory(${LIB_DIRECTORY}/glfw)
+add_subdirectory(${LIB_DIRECTORY}/shaderc)
 
 #Include Directories
-include_directories(${SCALPEL_SOURCE_DIR} ${GLM_INCLUDE_DIR} ${STB_INCLUDE_DIR})
-
-#Add Source Files to our project Files
-file(GLOB_RECURSE SCALPEL_SOURCE_FILES
-      ${SCALPEL_SOURCE_DIR}/*.h
-      ${SCALPEL_SOURCE_DIR}/*.cpp
-      ${SCALPEL_SOURCE_DIR}/*.c
-)
+include_directories(${SCALPEL_SOURCE_DIR} ${LIB_DIRECTORY} ${GLM_INCLUDE_DIR} ${STB_INCLUDE_DIR})
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -51,7 +45,7 @@ target_link_libraries(Scalpel ${OPENGL_LIBRARIES})
 add_subdirectory (${CMAKE_CURRENT_SOURCE_DIR}/Src/Renderer)
 target_link_libraries(Scalpel ScalpelRenderer)
 
-#Find and Link With Vulkan
+#Find and Include Vulkan
 if (WIN32)
     include_directories($ENV{VK_SDK_PATH}/Include
                         $ENV{VULKAN_SDK}/Include)

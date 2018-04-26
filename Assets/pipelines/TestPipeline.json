@@ -1,0 +1,44 @@
+{
+    "pipeline" : {
+        "base_pipeline"     : "Assets/pipelines/BasePipeline.json",
+        "vertex_shader"     : "vert.spv",
+        "fragment_shader"   : "frag.spv",
+        "input_assembly"    : {
+            "topology"              : "triangle_list",
+            "primitive_restart"     : "false"
+        },
+        "tessellation"      : {
+            "patch_control_points"  : 1
+        },
+        "viewport"          : {
+            "min_depth"             : 0.0,
+            "max_depth"             : 1.0
+        },
+        "rasterization"     : {
+            "depth_clamp_enable"    : true,
+            "rasterizer_discard_enable" : false,
+            "polygon_mode"          : "fill",
+            "cull_mode"             : "none",
+            "front_face"            : "counter_clockwise",
+            "depth_bias_enable"     : false,
+            "depth_bias_factor"     : 0.0,
+            "depth_bias_clamp"      : 1.0,
+            "depth_bias_slope"      : 0.0,
+            "line_width"            : 1.0
+        },
+        "multisample"       : {
+
+        },
+        "depth_stencil"     : {
+
+        },
+        "color_blend"       : {
+
+        },
+        "dynamic_states"    : {
+
+        }
+
+    }
+
+}

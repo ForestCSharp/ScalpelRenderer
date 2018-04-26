@@ -1,12 +1,9 @@
-#include <stdio.h>
 #include <string>
 #include <iostream>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/rotate_vector.hpp>
-#include <memory>
-#include <chrono>
 
 #include "Renderer/Vulkan/VulkanContext.h"
 #include "Renderer/Vulkan/VulkanCommandBuffer.h"
@@ -16,13 +13,57 @@
 #include "Renderer/Vulkan/VulkanBuffer.h"
 #include "Renderer/Vulkan/VulkanUniform.h"
 #include "Renderer/Vulkan/VulkanImage.h"
-
 #include "Renderer/Vulkan/VulkanRenderItem.hpp"
-
-
 #include <GLFW\glfw3.h>
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "../Libs/tinyobj/tiny_obj_loader.h"
+
 #define VULKAN_HPP_NO_EXCEPTIONS
+
+VulkanRenderItem LoadModel(std::string& FilePath)
+{
+	tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string err;
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, FilePath.c_str())) {
+        throw std::runtime_error(err);
+    }
+
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+
+	for (const auto& shape : shapes) 
+	{
+		for (const auto& index : shape.mesh.indices) 
+		{
+			Vertex vertex = {};
+
+			vertex.pos = {
+			attrib.vertices[3 * index.vertex_index + 0],
+			attrib.vertices[3 * index.vertex_index + 1],
+			attrib.vertices[3 * index.vertex_index + 2]
+			};
+
+			vertex.texCoord = {
+				attrib.texcoords[2 * index.texcoord_index + 0],
+    			1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+			};
+
+			vertex.color = {1.0f, 1.0f, 1.0f};
+
+			vertices.push_back(vertex);
+			indices.push_back(indices.size());
+		}
+	}
+
+	VulkanRenderItem NewRenderItem((void*) vertices.data(), sizeof(vertices[0]) * vertices.size(),
+								  (void*) indices.data(), sizeof(indices[0]) * indices.size(), static_cast<uint32_t>(indices.size()));
+
+	return NewRenderItem;
+}
 
 void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& MouseDeltaX, const float& MouseDeltaY, glm::vec3& CameraPosition, glm::vec3& Target)
 {
@@ -94,12 +135,9 @@ int main(int, char**)
 
 	glfwSetErrorCallback(error_callback);
 
-	if (!glfwInit()) 
-	{
-		return 1;
-	}
+	if (!glfwInit()) {return 1; }
 
-	glfwWindowHint( GLFW_CLIENT_API, GLFW_NO_API );
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	GLFWwindow* window = glfwCreateWindow(1080, 720, "Scalpel", NULL, NULL);
 
 	VulkanContext* Context = VulkanContext::Get();
@@ -107,10 +145,14 @@ int main(int, char**)
 	
 	//Scope block for implicit destruction of unique vulkan objects
 	{
+		//TODO: For a game's purposes, this can probably be handled in the Context Startup
 		VulkanSwapchain Swapchain;
 		Swapchain.BuildSwapchain();
 
 		//Swapchain Render Target Setup (this will be handled by Render Graph)
+		/* TODO: implicitly determine LoadOp,StoreOp, layouts from usage as they move through the renderpasses 
+				 Should only need to define format
+				 see: https://www.ea.com/frostbite/news/framegraph-extensible-rendering-architecture-in-frostbite */
 		VulkanRenderTarget ColorTarget;
 		for (auto& UniqueImageView : Swapchain.GetImageViews())
 		{
@@ -154,9 +196,9 @@ int main(int, char**)
 
 		VulkanUniform UniformBuffer(sizeof(UniformBufferObject));
 
-		VulkanRenderItem TestVulkanRenderItem((void*) vertices.data(), sizeof(vertices[0]) * vertices.size(),
-								  (void*) indices.data(), sizeof(indices[0]) * indices.size(), static_cast<uint32_t>(indices.size()));
-		
+		std::string ModelPath(ASSET_DIR + std::string("/models/Torus.obj"));
+		VulkanRenderItem TestVulkanRenderItem = LoadModel(ModelPath);
+
 		//Reference some resources in our render item
 		TestVulkanRenderItem.AddBufferResource("ubo", UniformBuffer.GetDescriptorInfo());
 		TestVulkanRenderItem.AddImageResource("texSampler", Image.GetDescriptorInfo());
@@ -183,6 +225,7 @@ int main(int, char**)
 
 		/* ... Pipeline Setup Here ... */
 		//TODO: Better way to deal with all of this pipeline setup (perhaps a pipeline definition file that goes along with Shader SpirV)
+		//TODO: Pipeline derivation (faster creation, faster binding) (can derive parts of the create info)
 		VulkanGraphicsPipeline Pipeline;
 
 		Pipeline.InputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
@@ -240,7 +283,7 @@ int main(int, char**)
 		CommandBuffers.resize(RenderPass.GetFramebuffers().size());
 
 		std::vector<std::pair<VulkanRenderItem*, VulkanGraphicsPipeline*>> VulkanRenderItems;
-		for (int i = 0; i < 1000; ++i)
+		for (int i = 0; i < 2; ++i)
 		{
 			VulkanRenderItems.push_back(std::pair<VulkanRenderItem*, VulkanGraphicsPipeline*>(&TestVulkanRenderItem, &Pipeline));
 		}
@@ -257,26 +300,8 @@ int main(int, char**)
 
 				//TODO: Iterate over all renderpasses (sorted based on Frame Graph and call function to handle them (see below))
 				//TODO: The above will also need to handle barriers between certain renderpasses when necessary
-				//TODO: Function to handle the BeginInfo, BeginRenderPass, ExecuteSecondary, EndRenderPass
 
-				//RenderPass execution:
-
-				vk::RenderPassBeginInfo BeginInfo;
-				BeginInfo.renderPass = RenderPass.GetHandle();
-				BeginInfo.framebuffer = RenderPass.GetFramebuffers()[i].get();
-				BeginInfo.renderArea.offset = {0,0};
-				BeginInfo.renderArea.extent = Swapchain.GetExtent();
-				
-				vk::ClearColorValue ClearColor(std::array<float, 4>{0.39f, 0.58f, 0.93f, 1.0f});
-				vk::ClearDepthStencilValue ClearDepth(1.0f, 0);
-				std::vector<vk::ClearValue> ClearValues = {ClearColor, ClearDepth};
-				
-				BeginInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
-				BeginInfo.pClearValues = ClearValues.data();
-
-				CommandBuffer().beginRenderPass(BeginInfo, vk::SubpassContents::eSecondaryCommandBuffers);	
-				CommandBuffer().executeCommands(1, &RenderPass.GetCommandBuffer().GetHandle());
-				CommandBuffer().endRenderPass();
+				RenderPass.RecordCommands(CommandBuffer, i);
 
 				CommandBuffer.End();
 			}
@@ -399,9 +424,8 @@ int main(int, char**)
 		Context->GetDevice().waitIdle();
 	}
 	
-	Context->Shutdown();
-
 	// Cleanup
+	Context->Shutdown();
 	glfwTerminate();
 
 	return 0;

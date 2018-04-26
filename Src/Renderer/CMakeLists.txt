@@ -2,7 +2,6 @@ cmake_minimum_required (VERSION 3.0.2)
 
 #Add Source Files to our project Files
 file(GLOB_RECURSE SCALPEL_RENDERER_SOURCE_FILES
-      ${CMAKE_CURRENT_SOURCE_DIR}/*.h
       ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/*.c
 )

@@ -15,6 +15,7 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline()
 
 VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
 {
+	
 }
 
 void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const std::string& VertexShader, const std::string& FragmentShader)
@@ -52,7 +53,7 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 		uint32_t CurrentOffset = 0;
 
 		//Individual elements of our vertices
-		std::vector<vk::VertexInputAttributeDescription> InputAttributes;
+		VertexAttributeBindings.clear();
 		for (auto& Input : VertexInputs)
 		{
 			vk::VertexInputAttributeDescription Attribute;
@@ -61,7 +62,7 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 			Attribute.format   = (vk::Format)Input->format;
 			Attribute.offset = CurrentOffset;
 
-			InputAttributes.push_back(Attribute);
+			VertexAttributeBindings.push_back(Attribute);
 			CurrentOffset += spv_reflect::FormatSize((VkFormat) Attribute.format);		
 		}
 
@@ -71,10 +72,14 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 		VertexBinding.stride = CurrentOffset;
 		VertexBinding.inputRate = vk::VertexInputRate::eVertex;
 
-		std::vector<vk::VertexInputBindingDescription> VertexBindingArray;
-		VertexBindingArray.push_back(VertexBinding);
+		VertexInputBindings.clear();
+		VertexInputBindings.push_back(VertexBinding);
 
-		SetVertexInputBindings(VertexBindingArray, InputAttributes);
+		VertexInput.vertexBindingDescriptionCount = static_cast<uint32_t>(VertexInputBindings.size());
+		VertexInput.pVertexBindingDescriptions = VertexInputBindings.data();
+
+		VertexInput.vertexAttributeDescriptionCount = static_cast<uint32_t>(VertexAttributeBindings.size());
+		VertexInput.pVertexAttributeDescriptions = VertexAttributeBindings.data();
 	}
 
 	std::vector<char> FragmentSpirV = LoadShaderFromFile(FragmentShader);
@@ -185,7 +190,6 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 	PipelineLayout = VulkanContext::Get()->GetDevice().createPipelineLayoutUnique(PipelineLayoutCreateInfo);
 	CreateInfo.layout = PipelineLayout.get();
 	
-	//TODO: Hook up Layout, Renderpass, and subpass vars in struct
 	//Render pass hookup
 	CreateInfo.renderPass = RenderPass.GetHandle();
 	CreateInfo.subpass = 0;
@@ -264,17 +268,4 @@ vk::ShaderModule VulkanGraphicsPipeline::CreateShaderModule(std::vector<char> sp
 	CreateInfo.pCode = reinterpret_cast<const uint32_t*>(spvCode.data());
 
 	return VulkanContext::Get()->GetDevice().createShaderModule(CreateInfo);
-}
-
-void VulkanGraphicsPipeline::SetVertexInputBindings(std::vector<vk::VertexInputBindingDescription>& InputBindings, std::vector<vk::VertexInputAttributeDescription>& AttributeBindings)
-{
-	//Store this information so our pointers are guaranteed valid below
-	VertexInputBindings = InputBindings;
-	VertexAttributeBindings = AttributeBindings;
-
-	VertexInput.vertexBindingDescriptionCount = static_cast<uint32_t>(VertexInputBindings.size());
-	VertexInput.pVertexBindingDescriptions = VertexInputBindings.data();
-
-	VertexInput.vertexAttributeDescriptionCount = static_cast<uint32_t>(VertexAttributeBindings.size());
-	VertexInput.pVertexAttributeDescriptions = VertexAttributeBindings.data();
 }

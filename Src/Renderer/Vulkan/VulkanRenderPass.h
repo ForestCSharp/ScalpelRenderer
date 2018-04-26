@@ -43,12 +43,17 @@ public:
 	void BuildCommandBuffer(std::vector<std::pair<VulkanRenderItem*, VulkanGraphicsPipeline*>> ItemsToRender);
 	VulkanCommandBuffer& GetCommandBuffer() { return CommandBuffer; }
 
+	//Adds commands to command buffer
+	void RecordCommands(VulkanCommandBuffer& CommandBuffer, int FrameIndex);
+
 protected:
 
 	vk::UniqueRenderPass RenderPass;
 
 	std::vector<vk::UniqueFramebuffer> Framebuffers;
 
-	/** Secondary command buffer that orchestrates bipeline binds and render calls */
+	/** Secondary command buffer that orchestrates pipeline binds and render calls */
 	VulkanCommandBuffer CommandBuffer;
+
+	vk::Extent2D Extent;
 };
