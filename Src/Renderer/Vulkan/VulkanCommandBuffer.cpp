@@ -29,7 +29,7 @@ void VulkanCommandBuffer::BeginSecondary(vk::CommandBufferUsageFlags Flags, vk::
 	vk::CommandBufferInheritanceInfo InheritanceInfo;
 	InheritanceInfo.renderPass = RenderPass;
 	InheritanceInfo.subpass = 0; //TODO: handle subpass when we support them
-	InheritanceInfo.framebuffer = VK_NULL_HANDLE;
+	//InheritanceInfo.framebuffer = VK_NULL_HANDLE;
 	//TODO: Occlusion Query Support
 
 	vk::CommandBufferBeginInfo BeginInfo;

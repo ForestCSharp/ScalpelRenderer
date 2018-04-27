@@ -1,4 +1,5 @@
 cmake_minimum_required (VERSION 3.0.2)
+
 project(Scalpel)
 
 set(LIB_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Libs)
@@ -19,6 +20,8 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(${LIB_DIRECTORY}/glfw)
+
+set(SHADERC_SKIP_TESTS TRUE)
 add_subdirectory(${LIB_DIRECTORY}/shaderc)
 
 #Include Directories
@@ -33,17 +36,21 @@ find_package(OpenGL REQUIRED)
 
 add_executable(Scalpel ${CMAKE_CURRENT_SOURCE_DIR}/Src/main.cpp)
 
+
 #Asset directory
 target_compile_definitions(Scalpel PRIVATE ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets")
 
 #Link With GLFW
-target_link_libraries(Scalpel glfw ${GLFW_LIBRARIES})
+target_link_libraries(Scalpel PUBLIC glfw ${GLFW_LIBRARIES})
 #Link With OpenGL
-target_link_libraries(Scalpel ${OPENGL_LIBRARIES})
+target_link_libraries(Scalpel PUBLIC ${OPENGL_LIBRARIES})
 
 #Renderer Library
 add_subdirectory (${CMAKE_CURRENT_SOURCE_DIR}/Src/Renderer)
-target_link_libraries(Scalpel ScalpelRenderer)
+target_link_libraries(Scalpel PUBLIC ScalpelRenderer)
+
+#ShaderC
+target_link_libraries(Scalpel PRIVATE shaderc)
 
 #Find and Include Vulkan
 if (WIN32)
@@ -54,3 +61,4 @@ else()
                         $ENV{VULKAN_SDK}/include
                         $ENV{VULKAN_SDK}/x86_64/include)
 endif()
+
