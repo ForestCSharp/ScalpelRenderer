@@ -8,7 +8,7 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 proj;
 } ubo;
 
-#include "VertexInput.glsl"
+#include "VertexInputDefinition.glsl"
 
 //Data to pass to Fragment Shader
 layout(location = 0) out vec3 fragColor;
@@ -19,3 +19,4 @@ void main() {
     fragColor = inColor;
     fragTexCoord = inTexCoord;
 }
+

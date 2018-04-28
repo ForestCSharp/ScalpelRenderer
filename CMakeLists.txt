@@ -21,9 +21,6 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(${LIB_DIRECTORY}/glfw)
 
-set(SHADERC_SKIP_TESTS TRUE)
-add_subdirectory(${LIB_DIRECTORY}/shaderc)
-
 #Include Directories
 include_directories(${SCALPEL_SOURCE_DIR} ${LIB_DIRECTORY} ${GLM_INCLUDE_DIR} ${STB_INCLUDE_DIR})
 
@@ -48,9 +45,6 @@ target_link_libraries(Scalpel PUBLIC ${OPENGL_LIBRARIES})
 #Renderer Library
 add_subdirectory (${CMAKE_CURRENT_SOURCE_DIR}/Src/Renderer)
 target_link_libraries(Scalpel PUBLIC ScalpelRenderer)
-
-#ShaderC
-target_link_libraries(Scalpel PRIVATE shaderc)
 
 #Find and Include Vulkan
 if (WIN32)

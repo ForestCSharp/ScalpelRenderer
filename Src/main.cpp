@@ -16,35 +16,10 @@
 #include "Renderer/Vulkan/VulkanRenderItem.hpp"
 #include <GLFW\glfw3.h>
 
-#include "shaderc/shaderc.hpp"
-
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "../Libs/tinyobj/tiny_obj_loader.h"
 
 #define VULKAN_HPP_NO_EXCEPTIONS
-
-#include <shaderc/shaderc.hpp>
-
-// Returns GLSL shader source text after preprocessing.
-std::string preprocess_shader(const std::string& source_name,
-                              shaderc_shader_kind kind,
-                              const std::string& source) {
-  shaderc::Compiler compiler;
-  shaderc::CompileOptions options;
-
-  // Like -DMY_DEFINE=1
-  options.AddMacroDefinition("MY_DEFINE", "1");
-
-  shaderc::PreprocessedSourceCompilationResult result =
-      compiler.PreprocessGlsl(source, kind, source_name.c_str(), options);
-
-  if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-    std::cerr << result.GetErrorMessage();
-    return "";
-  }
-
-  return {result.cbegin(), result.cend()};
-}
 
 VulkanRenderItem LoadModel(std::string& FilePath)
 {
