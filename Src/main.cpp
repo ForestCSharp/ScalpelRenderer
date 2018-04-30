@@ -127,6 +127,7 @@ void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& Mou
 
 int main(int, char**)
 {
+
 	// Setup window
 	auto error_callback = [] (int error, const char* description)
 	{

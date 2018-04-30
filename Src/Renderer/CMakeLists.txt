@@ -13,7 +13,7 @@ target_link_libraries(ScalpelRenderer glfw ${GLFW_LIBRARIES})
 #Link With OpenGL
 target_link_libraries(ScalpelRenderer ${OPENGL_LIBRARIES})
 
-#Find and Link With Vulkan
+#Find and Link With Vulkan TODO: fix for 64 bit
 if (WIN32)
     include_directories($ENV{VK_SDK_PATH}/Include
                         $ENV{VULKAN_SDK}/Include)
@@ -39,7 +39,11 @@ else()
 endif()
 
 if (WIN32)
-    target_link_libraries(ScalpelRenderer $ENV{VULKAN_SDK}/Lib32/vulkan-1.lib)
+    if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+        target_link_libraries(ScalpelRenderer $ENV{VULKAN_SDK}/Lib/vulkan-1.lib)
+    else()
+        target_link_libraries(ScalpelRenderer $ENV{VULKAN_SDK}/Lib32/vulkan-1.lib)
+    endif()
 else()
     target_link_libraries(ScalpelRenderer vulkan)
 endif()
