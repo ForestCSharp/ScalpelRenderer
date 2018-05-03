@@ -8,6 +8,8 @@ set(GLM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Libs/glm)
 
 set(STB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Libs/stb)
 
+set(GLSLANG_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Libs/glslang)
+
 set(SCALPEL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Src)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -20,9 +22,10 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(${LIB_DIRECTORY}/glfw)
+add_subdirectory(${LIB_DIRECTORY}/glslang)
 
 #Include Directories
-include_directories(${SCALPEL_SOURCE_DIR} ${LIB_DIRECTORY} ${GLM_INCLUDE_DIR} ${STB_INCLUDE_DIR})
+include_directories(${SCALPEL_SOURCE_DIR} ${LIB_DIRECTORY} ${GLM_INCLUDE_DIR} ${STB_INCLUDE_DIR} ${GLSLANG_INCLUDE_DIR})
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -41,6 +44,8 @@ target_compile_definitions(Scalpel PRIVATE ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR
 target_link_libraries(Scalpel PUBLIC glfw ${GLFW_LIBRARIES})
 #Link With OpenGL
 target_link_libraries(Scalpel PUBLIC ${OPENGL_LIBRARIES})
+#Link With glslang
+target_link_libraries(Scalpel PUBLIC glslang SPIRV)
 
 #Renderer Library
 add_subdirectory (${CMAKE_CURRENT_SOURCE_DIR}/Src/Renderer)
@@ -55,4 +60,3 @@ else()
                         $ENV{VULKAN_SDK}/include
                         $ENV{VULKAN_SDK}/x86_64/include)
 endif()
-

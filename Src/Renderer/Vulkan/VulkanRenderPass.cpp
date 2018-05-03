@@ -19,7 +19,7 @@ void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTa
 	std::vector<std::vector<vk::ImageView>> FramebufferImageViewsPerBackbuffer(BackbufferCount);
 
 	//[1] Iterate over attachments and create descriptions and references
-	for (size_t i = 0; i < RenderTargets.size(); ++i)
+	for (uint32_t i = 0; i < RenderTargets.size(); ++i)
 	{
 		auto& RenderTarget = RenderTargets[i];
 		assert(RenderTarget->ImageViews.size() > 0);
@@ -59,7 +59,7 @@ void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTa
 	//Our subpass
 	vk::SubpassDescription Subpass;
 	Subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-	Subpass.colorAttachmentCount = ColorAttachmentReferences.size();
+	Subpass.colorAttachmentCount = (uint32_t)ColorAttachmentReferences.size();
 	Subpass.pColorAttachments = ColorAttachmentReferences.data();
 	Subpass.pDepthStencilAttachment = &DepthAttachmentReference;
 
@@ -137,7 +137,7 @@ void VulkanRenderPass::BuildCommandBuffer(std::vector<std::pair<VulkanRenderItem
 	CommandBuffer.End();
 }
 
-void VulkanRenderPass::RecordCommands(VulkanCommandBuffer& CommandBuffer, int FrameIndex) 
+void VulkanRenderPass::RecordCommands(VulkanCommandBuffer& CommandBuffer, size_t FrameIndex) 
 {
 	//TODO: Clear Values shouldn't be hard coded
 	vk::ClearColorValue ClearColor(std::array<float, 4>{0.39f, 0.58f, 0.93f, 1.0f});

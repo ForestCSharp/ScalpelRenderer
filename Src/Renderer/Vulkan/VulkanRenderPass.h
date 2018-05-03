@@ -44,7 +44,7 @@ public:
 	VulkanCommandBuffer& GetCommandBuffer() { return CommandBuffer; }
 
 	//Adds commands to command buffer
-	void RecordCommands(VulkanCommandBuffer& CommandBuffer, int FrameIndex);
+	void RecordCommands(VulkanCommandBuffer& CommandBuffer, size_t FrameIndex);
 
 protected:
 

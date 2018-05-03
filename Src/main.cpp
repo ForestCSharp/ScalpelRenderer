@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <algorithm>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -20,6 +21,241 @@
 #include "../Libs/tinyobj/tiny_obj_loader.h"
 
 #define VULKAN_HPP_NO_EXCEPTIONS
+
+#include <glslang/public/ShaderLang.h>
+#include <SPIRV/GlslangToSpv.h>
+#include <StandAlone/DirStackFileIncluder.h>
+#include <StandAlone/ResourceLimits.h>
+
+std::string GetFilePath (const std::string& str)
+{
+	size_t found = str.find_last_of("/\\");
+	return str.substr(0,found);
+	//size_t FileName = str.substr(found+1);
+}
+
+std::string GetSuffix(const std::string& name)
+{
+    const size_t pos = name.rfind('.');
+    return (pos == std::string::npos) ? "" : name.substr(name.rfind('.') + 1);
+}
+
+EShLanguage GetShaderStage(const std::string& stage)
+{
+    if (stage == "vert") {
+        return EShLangVertex;
+    } else if (stage == "tesc") {
+        return EShLangTessControl;
+    } else if (stage == "tese") {
+        return EShLangTessEvaluation;
+    } else if (stage == "geom") {
+        return EShLangGeometry;
+    } else if (stage == "frag") {
+        return EShLangFragment;
+    } else if (stage == "comp") {
+        return EShLangCompute;
+    } else {
+        assert(0 && "Unknown shader stage");
+        return EShLangCount;
+    }
+}
+
+const TBuiltInResource DefaultTBuiltInResource = {
+    /* .MaxLights = */ 32,
+    /* .MaxClipPlanes = */ 6,
+    /* .MaxTextureUnits = */ 32,
+    /* .MaxTextureCoords = */ 32,
+    /* .MaxVertexAttribs = */ 64,
+    /* .MaxVertexUniformComponents = */ 4096,
+    /* .MaxVaryingFloats = */ 64,
+    /* .MaxVertexTextureImageUnits = */ 32,
+    /* .MaxCombinedTextureImageUnits = */ 80,
+    /* .MaxTextureImageUnits = */ 32,
+    /* .MaxFragmentUniformComponents = */ 4096,
+    /* .MaxDrawBuffers = */ 32,
+    /* .MaxVertexUniformVectors = */ 128,
+    /* .MaxVaryingVectors = */ 8,
+    /* .MaxFragmentUniformVectors = */ 16,
+    /* .MaxVertexOutputVectors = */ 16,
+    /* .MaxFragmentInputVectors = */ 15,
+    /* .MinProgramTexelOffset = */ -8,
+    /* .MaxProgramTexelOffset = */ 7,
+    /* .MaxClipDistances = */ 8,
+    /* .MaxComputeWorkGroupCountX = */ 65535,
+    /* .MaxComputeWorkGroupCountY = */ 65535,
+    /* .MaxComputeWorkGroupCountZ = */ 65535,
+    /* .MaxComputeWorkGroupSizeX = */ 1024,
+    /* .MaxComputeWorkGroupSizeY = */ 1024,
+    /* .MaxComputeWorkGroupSizeZ = */ 64,
+    /* .MaxComputeUniformComponents = */ 1024,
+    /* .MaxComputeTextureImageUnits = */ 16,
+    /* .MaxComputeImageUniforms = */ 8,
+    /* .MaxComputeAtomicCounters = */ 8,
+    /* .MaxComputeAtomicCounterBuffers = */ 1,
+    /* .MaxVaryingComponents = */ 60,
+    /* .MaxVertexOutputComponents = */ 64,
+    /* .MaxGeometryInputComponents = */ 64,
+    /* .MaxGeometryOutputComponents = */ 128,
+    /* .MaxFragmentInputComponents = */ 128,
+    /* .MaxImageUnits = */ 8,
+    /* .MaxCombinedImageUnitsAndFragmentOutputs = */ 8,
+    /* .MaxCombinedShaderOutputResources = */ 8,
+    /* .MaxImageSamples = */ 0,
+    /* .MaxVertexImageUniforms = */ 0,
+    /* .MaxTessControlImageUniforms = */ 0,
+    /* .MaxTessEvaluationImageUniforms = */ 0,
+    /* .MaxGeometryImageUniforms = */ 0,
+    /* .MaxFragmentImageUniforms = */ 8,
+    /* .MaxCombinedImageUniforms = */ 8,
+    /* .MaxGeometryTextureImageUnits = */ 16,
+    /* .MaxGeometryOutputVertices = */ 256,
+    /* .MaxGeometryTotalOutputComponents = */ 1024,
+    /* .MaxGeometryUniformComponents = */ 1024,
+    /* .MaxGeometryVaryingComponents = */ 64,
+    /* .MaxTessControlInputComponents = */ 128,
+    /* .MaxTessControlOutputComponents = */ 128,
+    /* .MaxTessControlTextureImageUnits = */ 16,
+    /* .MaxTessControlUniformComponents = */ 1024,
+    /* .MaxTessControlTotalOutputComponents = */ 4096,
+    /* .MaxTessEvaluationInputComponents = */ 128,
+    /* .MaxTessEvaluationOutputComponents = */ 128,
+    /* .MaxTessEvaluationTextureImageUnits = */ 16,
+    /* .MaxTessEvaluationUniformComponents = */ 1024,
+    /* .MaxTessPatchComponents = */ 120,
+    /* .MaxPatchVertices = */ 32,
+    /* .MaxTessGenLevel = */ 64,
+    /* .MaxViewports = */ 16,
+    /* .MaxVertexAtomicCounters = */ 0,
+    /* .MaxTessControlAtomicCounters = */ 0,
+    /* .MaxTessEvaluationAtomicCounters = */ 0,
+    /* .MaxGeometryAtomicCounters = */ 0,
+    /* .MaxFragmentAtomicCounters = */ 8,
+    /* .MaxCombinedAtomicCounters = */ 8,
+    /* .MaxAtomicCounterBindings = */ 1,
+    /* .MaxVertexAtomicCounterBuffers = */ 0,
+    /* .MaxTessControlAtomicCounterBuffers = */ 0,
+    /* .MaxTessEvaluationAtomicCounterBuffers = */ 0,
+    /* .MaxGeometryAtomicCounterBuffers = */ 0,
+    /* .MaxFragmentAtomicCounterBuffers = */ 1,
+    /* .MaxCombinedAtomicCounterBuffers = */ 1,
+    /* .MaxAtomicCounterBufferSize = */ 16384,
+    /* .MaxTransformFeedbackBuffers = */ 4,
+    /* .MaxTransformFeedbackInterleavedComponents = */ 64,
+    /* .MaxCullDistances = */ 8,
+    /* .MaxCombinedClipAndCullDistances = */ 8,
+    /* .MaxSamples = */ 4,
+    /* .limits = */ {
+        /* .nonInductiveForLoops = */ 1,
+        /* .whileLoops = */ 1,
+        /* .doWhileLoops = */ 1,
+        /* .generalUniformIndexing = */ 1,
+        /* .generalAttributeMatrixVectorIndexing = */ 1,
+        /* .generalVaryingIndexing = */ 1,
+        /* .generalSamplerIndexing = */ 1,
+        /* .generalVariableIndexing = */ 1,
+        /* .generalConstantMatrixVectorIndexing = */ 1,
+    }};
+
+//TODO: Multithread, manage SpirV that doesn't need recompiling (only recompile when dirty)
+const std::vector<unsigned int> CompileGLSL(const std::string& filename)
+{
+	glslang::InitializeProcess();
+
+	DirStackFileIncluder Includer;
+	
+	//Get Path of File
+	std::string Path = GetFilePath(filename);
+	Includer.pushExternalLocalDirectory(Path);
+
+	//Load GLSL into a string
+	std::ifstream file(filename);
+
+	if (!file.is_open()) 
+	{
+		std::cout << "Failed to load shader: " << filename << std::endl;
+		throw std::runtime_error("failed to open file: " + filename);
+    }
+
+	std::string InputGLSL((std::istreambuf_iterator<char>(file)),
+                 		   std::istreambuf_iterator<char>());
+
+	const char* InputCString = InputGLSL.c_str();
+
+	EShLanguage ShaderType = GetShaderStage(GetSuffix(filename));
+	glslang::TShader Shader(ShaderType);
+	Shader.setStrings(&InputCString, 1);
+
+	//Set up Vulkan/SpirV Environment
+	int ClientInputSemanticsVersion = 100; // maps to, say, #define VULKAN 100
+	glslang::EShTargetClientVersion VulkanClientVersion = glslang::EShTargetVulkan_1_0;  // would map to, say, Vulkan 1.0
+	glslang::EShTargetLanguageVersion TargetVersion = glslang::EShTargetSpv_1_0;    // maps to, say, SPIR-V 1.0
+
+	Shader.setEnvInput(glslang::EShSourceGlsl, ShaderType, glslang::EShClientVulkan, ClientInputSemanticsVersion);
+    Shader.setEnvClient(glslang::EShClientVulkan, VulkanClientVersion);
+	Shader.setEnvTarget(glslang::EShTargetSpv, TargetVersion);
+
+	TBuiltInResource Resources;
+	Resources = DefaultTBuiltInResource;
+	EShMessages messages = (EShMessages) (EShMsgSpvRules | EShMsgVulkanRules);
+
+	const int DefaultVersion = 100;
+
+	std::string PreprocessedGLSL;
+
+	if (!Shader.preprocess(&Resources, DefaultVersion, ENoProfile, false, false, messages, &PreprocessedGLSL, Includer)) 
+	{
+		std::cout << "GLSL Preprocessing Failed for: " << filename << std::endl;
+		std::cout << Shader.getInfoLog() << std::endl;
+		std::cout << Shader.getInfoDebugLog() << std::endl;
+	}
+
+	//std::cout << PreprocessedGLSL << std::endl;
+
+	const char* PreprocessedCStr = PreprocessedGLSL.c_str();
+	Shader.setStrings(&PreprocessedCStr, 1);
+
+	if (!Shader.parse(&Resources, 100, false, messages))
+	{
+		std::cout << "GLSL Parsing Failed for: " << filename << std::endl;
+		std::cout << Shader.getInfoLog() << std::endl;
+		std::cout << Shader.getInfoDebugLog() << std::endl;
+	}
+
+	glslang::TProgram Program;
+	Program.addShader(&Shader);
+
+	if(!Program.link(messages))
+	{
+		std::cout << "GLSL Linking Failed for: " << filename << std::endl;
+		std::cout << Shader.getInfoLog() << std::endl;
+		std::cout << Shader.getInfoDebugLog() << std::endl;
+	}
+
+	if (!Program.mapIO())
+	{
+		std::cout << "GLSL Linking (Mapping IO) Failed for: " << filename << std::endl;
+    	std::cout << Shader.getInfoLog() << std::endl;
+		std::cout << Shader.getInfoDebugLog() << std::endl;
+    }
+
+	std::vector<unsigned int> SpirV;
+	spv::SpvBuildLogger logger;
+	glslang::SpvOptions spvOptions;
+	glslang::GlslangToSpv(*Program.getIntermediate(ShaderType), SpirV, &logger, &spvOptions);
+
+	//TODO: Manage spirv that's already compiled
+	//glslang::OutputSpvBin(SpirV, (GetSuffix(filename) + std::string(".spv")).c_str());
+
+	if (logger.getAllMessages().length() > 0)
+	{
+		std::cout << logger.getAllMessages() << std::endl;
+	}
+
+	//TODO: Handle startup shutdown separately from compile function
+	glslang::FinalizeProcess();
+
+	return SpirV;
+}
 
 VulkanRenderItem LoadModel(std::string& FilePath)
 {
@@ -55,7 +291,7 @@ VulkanRenderItem LoadModel(std::string& FilePath)
 			vertex.color = {1.0f, 1.0f, 1.0f};
 
 			vertices.push_back(vertex);
-			indices.push_back(indices.size());
+			indices.push_back((uint32_t)indices.size());
 		}
 	}
 
@@ -127,6 +363,8 @@ void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& Mou
 
 int main(int, char**)
 {
+	auto VertSpv = CompileGLSL(ASSET_DIR + std::string("/shaders/shader.vert"));
+	auto FragSpv = CompileGLSL(ASSET_DIR + std::string("/shaders/shader.frag"));
 
 	// Setup window
 	auto error_callback = [] (int error, const char* description)
@@ -146,20 +384,16 @@ int main(int, char**)
 	
 	//Scope block for implicit destruction of unique vulkan objects
 	{
-		//TODO: For a game's purposes, this can probably be handled in the Context Startup
-		VulkanSwapchain Swapchain;
-		Swapchain.BuildSwapchain();
-
 		//Swapchain Render Target Setup (this will be handled by Render Graph)
 		/* TODO: implicitly determine LoadOp,StoreOp, layouts from usage as they move through the renderpasses 
-				 Should only need to define format
+				 Should only need to define format as
 				 see: https://www.ea.com/frostbite/news/framegraph-extensible-rendering-architecture-in-frostbite */
 		VulkanRenderTarget ColorTarget;
-		for (auto& UniqueImageView : Swapchain.GetImageViews())
+		for (auto& UniqueImageView : Context->GetSwapchain().GetImageViews())
 		{
 			ColorTarget.ImageViews.push_back(&UniqueImageView.get());
 		}
-		ColorTarget.Format = Swapchain.GetColorFormat();
+		ColorTarget.Format = Context->GetSwapchain().GetColorFormat();
 		ColorTarget.LoadOp = vk::AttachmentLoadOp::eClear;
 		ColorTarget.StoreOp = vk::AttachmentStoreOp::eStore;
 		ColorTarget.InitialLayout = vk::ImageLayout::eUndefined;
@@ -167,11 +401,11 @@ int main(int, char**)
 		ColorTarget.FinalLayout = vk::ImageLayout::ePresentSrcKHR;
 
 		VulkanRenderTarget DepthTarget;
-		for (auto& UniqueImageView : Swapchain.GetImageViews())
+		for (auto& UniqueImageView : Context->GetSwapchain().GetImageViews())
 		{
-			DepthTarget.ImageViews.push_back(&Swapchain.GetDepthView());
+			DepthTarget.ImageViews.push_back(&Context->GetSwapchain().GetDepthView());
 		}
-		DepthTarget.Format = Swapchain.GetDepthFormat();
+		DepthTarget.Format = Context->GetSwapchain().GetDepthFormat();
 		DepthTarget.LoadOp = vk::AttachmentLoadOp::eClear;
 		DepthTarget.StoreOp = vk::AttachmentStoreOp::eDontCare;
 		DepthTarget.InitialLayout = vk::ImageLayout::eUndefined;
@@ -182,7 +416,7 @@ int main(int, char**)
 		std::vector<VulkanRenderTarget*> RenderTargets = {&ColorTarget, &DepthTarget};
 
 		VulkanRenderPass RenderPass;
-		RenderPass.BuildRenderPass(RenderTargets, Swapchain.GetExtent().width, Swapchain.GetExtent().height, Swapchain.GetImageViews().size());
+		RenderPass.BuildRenderPass(RenderTargets, Context->GetSwapchain().GetExtent().width, Context->GetSwapchain().GetExtent().height, (uint32_t)Context->GetSwapchain().GetImageViews().size());
 
 		std::string ImageName(ASSET_DIR + std::string("/textures/test.png"));
 		VulkanImage Image(ImageName);
@@ -218,7 +452,7 @@ int main(int, char**)
 			UniformBufferObject Ubo;
 			Ubo.model = glm::rotate(glm::mat4(1.0f), TotalTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 			Ubo.view = glm::lookAt(CameraPosition, Target, UpVector);
-			Ubo.proj = glm::perspective(glm::radians(60.0f), Swapchain.GetExtent().width / (float) Swapchain.GetExtent().height, 0.001f, 10000.0f);
+			Ubo.proj = glm::perspective(glm::radians(60.0f), Context->GetSwapchain().GetExtent().width / (float) Context->GetSwapchain().GetExtent().height, 0.001f, 10000.0f);
 			Ubo.proj[1][1] *= -1;
 
 			Uniform.UpdateUniformData(&Ubo, sizeof(UniformBufferObject));
@@ -234,13 +468,13 @@ int main(int, char**)
 
 		Pipeline.Viewport.x = 0.f;
 		Pipeline.Viewport.y = 0.f;
-		Pipeline.Viewport.width = (float) Swapchain.GetExtent().width;
-		Pipeline.Viewport.height = (float) Swapchain.GetExtent().height;
+		Pipeline.Viewport.width = (float) Context->GetSwapchain().GetExtent().width;
+		Pipeline.Viewport.height = (float) Context->GetSwapchain().GetExtent().height;
 		Pipeline.Viewport.minDepth = 0.f;
 		Pipeline.Viewport.maxDepth = 1.f;
 
 		Pipeline.Scissor.offset = {0,0};
-		Pipeline.Scissor.extent = Swapchain.GetExtent();
+		Pipeline.Scissor.extent = Context->GetSwapchain().GetExtent();
 
 		Pipeline.Rasterizer.depthClampEnable = VK_FALSE;
 		Pipeline.Rasterizer.rasterizerDiscardEnable = VK_FALSE;
@@ -277,7 +511,7 @@ int main(int, char**)
 
 		//Pipeline.DynamicStates.push_back(vk::DynamicState::eViewport);
 		
-		Pipeline.BuildPipeline(RenderPass, ASSET_DIR + std::string("/shaders/vert.spv"), ASSET_DIR + std::string("/shaders/frag.spv"));
+		Pipeline.BuildPipeline(RenderPass, VertSpv, FragSpv);
 		/* ... End Pipeline Setup ... */
 
 		std::vector<VulkanCommandBuffer> CommandBuffers;
@@ -360,14 +594,14 @@ int main(int, char**)
 			{
 				Context->GetDevice().waitIdle();
 
-				Swapchain.BuildSwapchain();
+				Context->GetSwapchain().Build();
 				
-				RenderPass.BuildRenderPass(RenderTargets, Swapchain.GetExtent().width, Swapchain.GetExtent().height, Swapchain.GetImageViews().size());
+				RenderPass.BuildRenderPass(RenderTargets, Context->GetSwapchain().GetExtent().width, Context->GetSwapchain().GetExtent().height, (uint32_t)Context->GetSwapchain().GetImageViews().size());
 
-				Pipeline.Viewport.width = (float) Swapchain.GetExtent().width;
-				Pipeline.Viewport.height = (float) Swapchain.GetExtent().height;
-				Pipeline.Scissor.extent = Swapchain.GetExtent();
-				Pipeline.BuildPipeline(RenderPass, ASSET_DIR + std::string("/shaders/vert.spv"), ASSET_DIR + std::string("/shaders/frag.spv"));
+				Pipeline.Viewport.width = (float) Context->GetSwapchain().GetExtent().width;
+				Pipeline.Viewport.height = (float) Context->GetSwapchain().GetExtent().height;
+				Pipeline.Scissor.extent = Context->GetSwapchain().GetExtent();
+				Pipeline.BuildPipeline(RenderPass, VertSpv, FragSpv);
 
 				BuildPrimaryCommandBuffers();
 			};
@@ -380,7 +614,7 @@ int main(int, char**)
 				RebuildSwapchain();
 			}
 
-			auto NextImage = Context->GetDevice().acquireNextImageKHR(Swapchain.GetHandle(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphore.get(), vk::Fence());
+			auto NextImage = Context->GetDevice().acquireNextImageKHR(Context->GetSwapchain().GetHandle(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphore.get(), vk::Fence());
 			
 			if (NextImage.result == vk::Result::eErrorOutOfDateKHR || NextImage.result == vk::Result::eSuboptimalKHR)
 			{
@@ -412,7 +646,7 @@ int main(int, char**)
 			PresentInfo.waitSemaphoreCount = 1;
 			PresentInfo.pWaitSemaphores = SignalSemaphores;
 
-			vk::SwapchainKHR SwapChains[] = {Swapchain.GetHandle()};
+			vk::SwapchainKHR SwapChains[] = {Context->GetSwapchain().GetHandle()};
 			PresentInfo.swapchainCount = 1;
 			PresentInfo.pSwapchains = SwapChains;
 			PresentInfo.pImageIndices = &ImageIndex;

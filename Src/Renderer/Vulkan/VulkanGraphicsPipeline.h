@@ -19,7 +19,7 @@ public:
 	VulkanGraphicsPipeline();
 	~VulkanGraphicsPipeline();
 	
-	void BuildPipeline(class VulkanRenderPass& RenderPass,const std::string& VertexShader, const std::string& FragmentShader);
+	void BuildPipeline(class VulkanRenderPass& RenderPass,const std::vector<unsigned int>& VertexSpirV, const std::vector<unsigned int>& FragmentSpirV);
 	vk::Pipeline GetHandle() { return GraphicsPipeline.get(); }
 	vk::PipelineLayout GetLayout() { return PipelineLayout.get(); }
 
@@ -36,6 +36,7 @@ public: //Shader Stage Functions
 
 	std::vector<char> LoadShaderFromFile(const std::string& filename);
 	vk::ShaderModule  CreateShaderModule(std::vector<char> spvCode);
+	vk::ShaderModule  CreateShaderModule(std::vector<unsigned int> spvCode);
 
 public://Fixed Function Pipeline State
 

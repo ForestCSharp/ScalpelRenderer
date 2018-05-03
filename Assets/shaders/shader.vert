@@ -1,5 +1,6 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
+#extension GL_GOOGLE_include_directive : enable
 
 //Mesh Data
 layout(binding = 0) uniform UniformBufferObject {
@@ -7,6 +8,10 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
 } ubo;
+
+#include "blank_shader.glsl"
+
+const int b = 4;
 
 //Vertex Input Definition
 layout(location = 0) in vec3 inPosition;
@@ -20,5 +25,5 @@ layout(location = 1) out vec2 fragTexCoord;
 void main() {
     gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
     fragColor = inColor;
-    fragTexCoord = inTexCoord;
+    fragTexCoord = inTexCoord * a;
 }

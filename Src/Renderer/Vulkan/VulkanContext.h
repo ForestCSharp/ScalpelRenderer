@@ -1,22 +1,18 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+#include "VulkanSwapchain.h"
 
 //Vulkan Renderer Singleton Class
 //Manages long-persisting vulkan data structures
 //Instance, Devices, Queues, CommandPool
 class VulkanContext
 {
-    VulkanContext();
-
 public:
     ~VulkanContext();
 
     virtual void Startup(struct GLFWwindow* window);
-
     virtual void Shutdown();
-
-public: //Helper Functions
 
     //Instance Creation (and validation layer setup)
     void CreateInstance();
@@ -43,8 +39,28 @@ public: //Helper Functions
 	//Platform-Specific Surface Creation
     void CreateGLFWSurface(struct GLFWwindow* window);
 	vk::SurfaceKHR GetSurface() {return Surface;}
+
+	//Swapchain Getter
+	VulkanSwapchain& GetSwapchain() { return Swapchain; }
+
+	static VulkanContext *Get()
+    {
+        if (!SingletonPtr)
+		{
+          SingletonPtr = new VulkanContext;
+		}
+
+        return SingletonPtr;
+	}
+
+	static uint32_t FindMemoryType(uint32_t TypeFilter, vk::MemoryPropertyFlags Properties);
+
+	//Attempts to find a supported image format from candidates with tiling and features
+	vk::Format FindSupportedFormat(const std::vector<vk::Format>& Candidates, vk::ImageTiling Tiling, vk::FormatFeatureFlags Features);
     
 protected:
+
+	VulkanContext();
 
     vk::Instance Instance;
 
@@ -63,26 +79,7 @@ protected:
 
 	vk::SurfaceKHR Surface;
 
-public:
-
-    static VulkanContext *Get()
-    {
-        if (!SingletonPtr)
-		{
-          SingletonPtr = new VulkanContext;
-		}
-
-        return SingletonPtr;
-	}
-
-	//TODO: This function doesn't really have a good place to live... 
-	//		potentially abstract out Vulkan Memory Allocation?
-	static uint32_t FindMemoryType(uint32_t TypeFilter, vk::MemoryPropertyFlags Properties);
-
-	//Attempts to find a supported image format from candidates with tiling and features
-	vk::Format FindSupportedFormat(const std::vector<vk::Format>& Candidates, vk::ImageTiling Tiling, vk::FormatFeatureFlags Features);
-
-private:
+	VulkanSwapchain Swapchain;
 
 	static VulkanContext* SingletonPtr;
 };

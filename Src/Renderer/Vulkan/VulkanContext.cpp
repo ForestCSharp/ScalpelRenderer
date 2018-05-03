@@ -28,12 +28,13 @@ void VulkanContext::Startup(GLFWwindow* window)
 	CreateGLFWSurface(window);
     CreateDeviceAndQueues();
 	CreateCommandPool();
+    Swapchain.Build();
 }
 
 void VulkanContext::Shutdown()
 {
     std::cout << "--- BEGIN VULKAN CONTEXT SHUTDOWN ---" << std::endl;
-
+    Swapchain.~VulkanSwapchain(); // Ensure Swapchain's unique resources are destroyed first
 	Device.destroyCommandPool(CommandPool, nullptr);
     Device.destroy(nullptr);
     RemoveDebugCallback();
@@ -229,7 +230,7 @@ void VulkanContext::CreateDeviceAndQueues()
 		std::vector<vk::QueueFamilyProperties> QueueFamilyProperties = CurrPhysicalDevice.getQueueFamilyProperties();
 
         //TODO: Check device for needed features here before committing to it (64 bit fp ops, texture compression, etc.)
-        for (size_t i = 0; i < QueueFamilyProperties.size(); ++i)
+        for (uint32_t i = 0; i < QueueFamilyProperties.size(); ++i)
         {
 			//Need queue that supports graphics and presnetation
             if (QueueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics)
