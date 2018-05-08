@@ -1,9 +1,13 @@
 #include <glslang/public/ShaderLang.h>
 #include <SPIRV/GlslangToSpv.h>
 #include <StandAlone/DirStackFileIncluder.h>
-#include <StandAlone/ResourceLimits.h>
 
-std::string GetFilePath (const std::string& str)
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+
+std::string GetFilePath(const std::string& str)
 {
 	size_t found = str.find_last_of("/\\");
 	return str.substr(0,found);
@@ -130,18 +134,21 @@ const TBuiltInResource DefaultTBuiltInResource = {
         /* .generalSamplerIndexing = */ 1,
         /* .generalVariableIndexing = */ 1,
         /* .generalConstantMatrixVectorIndexing = */ 1,
-    }};
+    }
+};
+
+static bool glslangInitialized = false;
 
 //TODO: Multithread, manage SpirV that doesn't need recompiling (only recompile when dirty)
 const std::vector<unsigned int> CompileGLSL(const std::string& filename)
 {
-	glslang::InitializeProcess();
-
-	DirStackFileIncluder Includer;
-	
-	//Get Path of File
-	std::string Path = GetFilePath(filename);
-	Includer.pushExternalLocalDirectory(Path);
+    //TODO: Handle initialization / finalization once
+    // from source: "ShInitialize() should be called exactly once per process, not per thread."
+	if (!glslangInitialized)
+    {
+        glslang::InitializeProcess();
+        glslangInitialized = true;
+    }
 
 	//Load GLSL into a string
 	std::ifstream file(filename);
@@ -176,6 +183,12 @@ const std::vector<unsigned int> CompileGLSL(const std::string& filename)
 
 	const int DefaultVersion = 100;
 
+    DirStackFileIncluder Includer;
+	
+	//Get Path of File
+	std::string Path = GetFilePath(filename);
+	Includer.pushExternalLocalDirectory(Path);
+
 	std::string PreprocessedGLSL;
 
 	if (!Shader.preprocess(&Resources, DefaultVersion, ENoProfile, false, false, messages, &PreprocessedGLSL, Includer)) 
@@ -207,12 +220,12 @@ const std::vector<unsigned int> CompileGLSL(const std::string& filename)
 		std::cout << Shader.getInfoDebugLog() << std::endl;
 	}
 
-	if (!Program.mapIO())
-	{
-		std::cout << "GLSL Linking (Mapping IO) Failed for: " << filename << std::endl;
-    	std::cout << Shader.getInfoLog() << std::endl;
-		std::cout << Shader.getInfoDebugLog() << std::endl;
-    }
+	// if (!Program.mapIO())
+	// {
+	// 	std::cout << "GLSL Linking (Mapping IO) Failed for: " << filename << std::endl;
+    // 	std::cout << Shader.getInfoLog() << std::endl;
+	// 	std::cout << Shader.getInfoDebugLog() << std::endl;
+    // }
 
 	std::vector<unsigned int> SpirV;
 	spv::SpvBuildLogger logger;
@@ -228,7 +241,7 @@ const std::vector<unsigned int> CompileGLSL(const std::string& filename)
 	}
 
 	//TODO: Handle startup shutdown separately from compile function
-	glslang::FinalizeProcess();
+	//glslang::FinalizeProcess();
 
 	return SpirV;
 }
