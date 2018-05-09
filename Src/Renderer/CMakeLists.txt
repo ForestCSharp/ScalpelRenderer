@@ -47,3 +47,6 @@ if (WIN32)
 else()
     target_link_libraries(ScalpelRenderer vulkan)
 endif()
+
+#Link With glslang and SPIRV
+target_link_libraries(ScalpelRenderer glslang SPIRV)

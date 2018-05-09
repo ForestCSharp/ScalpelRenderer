@@ -44,8 +44,6 @@ target_compile_definitions(Scalpel PRIVATE ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR
 target_link_libraries(Scalpel PUBLIC glfw ${GLFW_LIBRARIES})
 #Link With OpenGL
 target_link_libraries(Scalpel PUBLIC ${OPENGL_LIBRARIES})
-#Link With glslang and SPIRV
-target_link_libraries(Scalpel PUBLIC glslang SPIRV)
 
 #Renderer Library
 add_subdirectory (${CMAKE_CURRENT_SOURCE_DIR}/Src/Renderer)

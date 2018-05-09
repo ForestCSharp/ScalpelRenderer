@@ -22,7 +22,7 @@
 
 #define VULKAN_HPP_NO_EXCEPTIONS
 
-#include "ShaderCompiler.hpp"
+#include "Renderer/GLSL/ShaderCompiler.hpp"
 
 VulkanRenderItem LoadModel(std::string& FilePath)
 {
