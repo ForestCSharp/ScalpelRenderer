@@ -9,7 +9,7 @@ VulkanRenderPass::VulkanRenderPass() : CommandBuffer(true /* bSecondary */)
 
 }
 
-void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTargets, uint32_t Width, uint32_t Height, uint32_t BackbufferCount)
+void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*>& RenderTargets, uint32_t Width, uint32_t Height, uint32_t BackbufferCount)
 {
 	//Note: Attachment Descriptions = Prototype, Framebuffer = Actual references
 	std::vector<vk::AttachmentDescription> AttachmentDescriptions;
@@ -130,7 +130,6 @@ void VulkanRenderPass::BuildCommandBuffer(std::vector<std::pair<VulkanRenderItem
 			CommandBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, Pipeline->GetHandle());
 		}
 
-		/*TODO: Need to create a descriptor set for this render item and pipeline type */
 		RenderItem->AddCommands(CommandBuffer, Pipeline);
 	}	 
 
@@ -139,10 +138,10 @@ void VulkanRenderPass::BuildCommandBuffer(std::vector<std::pair<VulkanRenderItem
 
 void VulkanRenderPass::RecordCommands(VulkanCommandBuffer& CommandBuffer, size_t FrameIndex) 
 {
-	//TODO: Clear Values shouldn't be hard coded
+	//TODO: Clear Values shouldn't be hard coded (should be part of render pass interface)
 	vk::ClearColorValue ClearColor(std::array<float, 4>{0.39f, 0.58f, 0.93f, 1.0f});
 	vk::ClearDepthStencilValue ClearDepth(1.0f, 0);
-	std::vector<vk::ClearValue> ClearValues = {ClearColor, ClearDepth};
+	std::vector<vk::ClearValue> ClearValues = {ClearColor, ClearColor, ClearDepth};
 
 	vk::RenderPassBeginInfo BeginInfo;
 	BeginInfo.renderPass = GetHandle();

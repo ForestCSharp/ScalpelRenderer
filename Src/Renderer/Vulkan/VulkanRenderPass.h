@@ -37,7 +37,7 @@ public:
 	std::vector<vk::UniqueFramebuffer>& GetFramebuffers() { return Framebuffers; }
 
 	//Used by frame graph to build this render target
-	void BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTargets, uint32_t Width, uint32_t Height, uint32_t BackbufferCount);
+	void BuildRenderPass(std::vector<VulkanRenderTarget*>& RenderTargets, uint32_t Width, uint32_t Height, uint32_t BackbufferCount);
 
 	//Builds a secondary command buffer for this render pass
 	void BuildCommandBuffer(std::vector<std::pair<VulkanRenderItem*, VulkanGraphicsPipeline*>> ItemsToRender);

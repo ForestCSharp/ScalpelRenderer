@@ -76,7 +76,6 @@ void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& Mou
 	glm::vec3 CamRight   = glm::normalize(glm::cross(CamForward, glm::vec3(0,0,1))) * MoveSpeed;
 	glm::vec3 CamUp      = glm::normalize(glm::cross(CamRight, CamForward)) * MoveSpeed;
 	
-	//TODO: Have Key Callback write to a std::map<int, bool> that maps keycodes to their pressed state
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
 		CameraPosition += CamForward;
@@ -119,10 +118,10 @@ void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& Mou
 		glm::vec3 CamToTarget = glm::normalize(Target - CameraPosition);
 
 		//Yaw
-		CamToTarget = glm::mat3(glm::rotate(-7.0f * MouseDeltaX, CamUp)) * CamToTarget;
+		CamToTarget = glm::mat3(glm::rotate(-4.0f * MouseDeltaX, CamUp)) * CamToTarget;
 
 		//Pitch
-		CamToTarget = glm::mat3(glm::rotate(-7.0f * MouseDeltaY, CamRight)) * CamToTarget;
+		CamToTarget = glm::mat3(glm::rotate(-4.0f * MouseDeltaY, CamRight)) * CamToTarget;
 
 		Target = CameraPosition + CamToTarget;
 	}
@@ -144,17 +143,31 @@ int main(int, char**)
 	if (!glfwInit()) {return 1; }
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	GLFWwindow* window = glfwCreateWindow(1080, 720, "Scalpel", NULL, NULL);
+	
+	int InitialWidth = 1280;
+	int InitialHeight = 720;
+
+	GLFWwindow* window = glfwCreateWindow(InitialWidth, InitialHeight, "Scalpel", NULL, NULL);
 
 	VulkanContext* Context = VulkanContext::Get();
 	Context->Startup(window);
 	
 	//Scope block for implicit destruction of unique vulkan objects
 	{
-		//Swapchain Render Target Setup (this will be handled by Render Graph)
-		/* TODO: implicitly determine LoadOp,StoreOp, layouts from usage as they move through the renderpasses 
-				 Should only need to define format as
-				 see: https://www.ea.com/frostbite/news/framegraph-extensible-rendering-architecture-in-frostbite */
+		//Testing adding an additional render target
+		VulkanRenderTarget TestRenderTarget;
+		VulkanImage RenderTargetImage(InitialWidth, InitialHeight, vk::Format::eR8G8B8A8Unorm, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eColorAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal);
+		for (auto& UniqueImageView : Context->GetSwapchain().GetImageViews())
+		{
+			TestRenderTarget.ImageViews.push_back(&RenderTargetImage.GetImageView());
+		}
+		TestRenderTarget.Format = RenderTargetImage.GetFormat();
+		TestRenderTarget.LoadOp = vk::AttachmentLoadOp::eClear;
+		TestRenderTarget.StoreOp = vk::AttachmentStoreOp::eStore;
+		TestRenderTarget.InitialLayout = vk::ImageLayout::eUndefined;
+		TestRenderTarget.UsageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		TestRenderTarget.FinalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+
 		VulkanRenderTarget ColorTarget;
 		for (auto& UniqueImageView : Context->GetSwapchain().GetImageViews())
 		{
@@ -180,7 +193,8 @@ int main(int, char**)
 		DepthTarget.FinalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 		DepthTarget.bDepthTarget = true;
 
-		std::vector<VulkanRenderTarget*> RenderTargets = {&ColorTarget, &DepthTarget};
+		//Note: Order in array determines index in shader currently
+		std::vector<VulkanRenderTarget*> RenderTargets = { &ColorTarget, &TestRenderTarget, &DepthTarget};
 
 		VulkanRenderPass RenderPass;
 		RenderPass.BuildRenderPass(RenderTargets, Context->GetSwapchain().GetExtent().width, Context->GetSwapchain().GetExtent().height, (uint32_t)Context->GetSwapchain().GetImageViews().size());
@@ -262,8 +276,9 @@ int main(int, char**)
 
 		Pipeline.ColorBlending.logicOpEnable = VK_FALSE;
 		Pipeline.ColorBlending.logicOp = vk::LogicOp::eCopy; // Optional when off
-		Pipeline.ColorBlending.attachmentCount = 1;
-		Pipeline.ColorBlending.pAttachments = &Pipeline.ColorBlendAttachment;
+		Pipeline.ColorBlending.attachmentCount = 2; //TODO: 1 per color attachment, handle in buildpipeline
+		std::vector<vk::PipelineColorBlendAttachmentState> BlendStates = {Pipeline.ColorBlendAttachment, Pipeline.ColorBlendAttachment};
+		Pipeline.ColorBlending.pAttachments = BlendStates.data(); 
 		Pipeline.ColorBlending.blendConstants[0] = 0.0f;
         Pipeline.ColorBlending.blendConstants[1] = 0.0f;
         Pipeline.ColorBlending.blendConstants[2] = 0.0f;
@@ -285,7 +300,7 @@ int main(int, char**)
 		CommandBuffers.resize(RenderPass.GetFramebuffers().size());
 
 		std::vector<std::pair<VulkanRenderItem*, VulkanGraphicsPipeline*>> VulkanRenderItems;
-		for (int i = 0; i < 2; ++i)
+		for (int i = 0; i < 1000; ++i)
 		{
 			VulkanRenderItems.push_back(std::pair<VulkanRenderItem*, VulkanGraphicsPipeline*>(&TestVulkanRenderItem, &Pipeline));
 		}
@@ -357,11 +372,21 @@ int main(int, char**)
 
 			UpdateUniformData(UniformBuffer, deltaSeconds);
 
-			auto RebuildSwapchain = [&]()
+			auto HandleResize = [&]()
 			{
 				Context->GetDevice().waitIdle();
 
 				Context->GetSwapchain().Build();
+
+				//TODO: This is what needs to be done after a resize for a rendertarget
+				{
+					RenderTargetImage = VulkanImage(Context->GetSwapchain().GetExtent().width, Context->GetSwapchain().GetExtent().height, vk::Format::eR8G8B8A8Unorm, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eColorAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal);
+					TestRenderTarget.ImageViews.clear();
+					for (auto& UniqueImageView : Context->GetSwapchain().GetImageViews())
+					{
+						TestRenderTarget.ImageViews.push_back(&RenderTargetImage.GetImageView());
+					}
+				}
 				
 				RenderPass.BuildRenderPass(RenderTargets, Context->GetSwapchain().GetExtent().width, Context->GetSwapchain().GetExtent().height, (uint32_t)Context->GetSwapchain().GetImageViews().size());
 
@@ -378,7 +403,7 @@ int main(int, char**)
 			{
 				Width = NewWidth;
 				Height = NewHeight;
-				RebuildSwapchain();
+				HandleResize();
 			}
 
 			auto NextImage = Context->GetDevice().acquireNextImageKHR(Context->GetSwapchain().GetHandle(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphore.get(), vk::Fence());
@@ -386,7 +411,7 @@ int main(int, char**)
 			if (NextImage.result == vk::Result::eErrorOutOfDateKHR || NextImage.result == vk::Result::eSuboptimalKHR)
 			{
 				//Acquiring Image failed: Need to rebuild our Out-Of-Date or SubOptimal swapchain
-				RebuildSwapchain();
+				HandleResize();
 				continue;
 			}
 
