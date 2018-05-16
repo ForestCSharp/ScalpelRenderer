@@ -2,25 +2,18 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
 
-//Mesh Data
-layout(binding = 0) uniform UniformBufferObject {
-    mat4 model;
-    mat4 view;
-    mat4 proj;
-} ubo;
+//MVP
+#include "MVP.glsl"
 
 //Vertex Input Definition
-#include "VertexInputDefinition.glsl"
-// layout(location = 0) in vec3 inPosition;
-// layout(location = 1) in vec3 inColor;
-// layout(location = 2) in vec2 inTexCoord;
+#include "VertexInput.glsl"
 
 //Data to pass to Fragment Shader
-layout(location = 0) out vec3 fragColor;
-layout(location = 1) out vec2 fragTexCoord;
+#define __VERTEX__
+#include "VertexToFragment.glsl"
 
 void main() {
-    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
+    gl_Position = MVP.proj * MVP.view * MVP.model * vec4(inPosition, 1.0);
     fragColor = inColor;
     fragTexCoord = inTexCoord * 3;
 }

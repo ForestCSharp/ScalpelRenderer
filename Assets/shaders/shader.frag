@@ -1,17 +1,12 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
+#extension GL_GOOGLE_include_directive : enable
 
-layout(location = 0) in vec3 fragColor;
-layout(location = 1) in vec2 fragTexCoord;
+#define __FRAGMENT__
+#include "VertexToFragment.glsl"
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outSecondary;
-
-layout(binding = 0) uniform UniformBufferObject {
-    mat4 model;
-    mat4 view;
-    mat4 proj;
-} ubo;
 
 layout(binding = 1) uniform sampler2D texSampler;
 

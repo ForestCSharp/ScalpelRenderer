@@ -216,7 +216,7 @@ int main(int, char**)
 		VulkanRenderItem TestVulkanRenderItem = LoadModel(ModelPath);
 
 		//Reference some resources in our render item
-		TestVulkanRenderItem.AddBufferResource("ubo", UniformBuffer.GetDescriptorInfo());
+		TestVulkanRenderItem.AddBufferResource("MVP", UniformBuffer.GetDescriptorInfo());
 		TestVulkanRenderItem.AddImageResource("texSampler", Image.GetDescriptorInfo());
 		/*TODO: FIXME: Currently it will result in a crash if the RenderItem doesn't have a resource 
 				for every descriptor in a descriptor set for a given pipeline */
