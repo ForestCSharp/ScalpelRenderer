@@ -10,20 +10,16 @@
 
 struct VulkanRenderTarget
 {
+	vk::AttachmentLoadOp LoadOp = vk::AttachmentLoadOp::eClear;
+	vk::AttachmentStoreOp StoreOp = vk::AttachmentStoreOp::eStore;
+
+	vk::ImageLayout InitialLayout = vk::ImageLayout::eUndefined;
+	vk::ImageLayout UsageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	vk::ImageLayout FinalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+
 	//1 Image per back buffer
 	std::vector<vk::ImageView*> ImageViews;
 	vk::Format Format;
-
-	vk::AttachmentLoadOp LoadOp;
-	vk::AttachmentStoreOp StoreOp;
-
-	vk::ImageLayout InitialLayout;
-	vk::ImageLayout UsageLayout;
-	vk::ImageLayout FinalLayout;
-
-	/*TODO: Better way to handle this, perhaps a second argument in build renderpass, 
-			that always gets appended to the end of our attachment array */
-	bool bDepthTarget = false;
 };
 
 class VulkanRenderPass
@@ -37,7 +33,7 @@ public:
 	std::vector<vk::UniqueFramebuffer>& GetFramebuffers() { return Framebuffers; }
 
 	//Used by frame graph to build this render target
-	void BuildRenderPass(std::vector<VulkanRenderTarget*>& RenderTargets, uint32_t Width, uint32_t Height, uint32_t BackbufferCount);
+	void BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTargets, VulkanRenderTarget* DepthTarget, uint32_t Width, uint32_t Height, uint32_t BackbufferCount);
 
 	//Builds a secondary command buffer for this render pass
 	void BuildCommandBuffer(std::vector<std::pair<VulkanRenderItem*, VulkanGraphicsPipeline*>> ItemsToRender);

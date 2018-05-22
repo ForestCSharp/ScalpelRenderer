@@ -21,7 +21,7 @@ public:
     //Takes in a command buffer and adds the necessary binds and draw calls for this render item
     void AddCommands(VulkanCommandBuffer& CommandBuffer, VulkanGraphicsPipeline* Pipeline)
     {
-        assert(Pipeline != nullptr); //TODO: make pipeline a reference
+        assert(Pipeline != nullptr);
 
         vk::Buffer VertexBuffers[] = {VertexBuffer.GetHandle()};
         vk::DeviceSize Offsets[] = {0};

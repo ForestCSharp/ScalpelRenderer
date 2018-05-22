@@ -3,13 +3,14 @@
 #include "VulkanContext.h"
 #include "VulkanSwapchain.h"
 #include <functional>
+#include <iostream>
 
 VulkanRenderPass::VulkanRenderPass() : CommandBuffer(true /* bSecondary */)
 {
 
 }
 
-void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*>& RenderTargets, uint32_t Width, uint32_t Height, uint32_t BackbufferCount)
+void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTargets, VulkanRenderTarget* DepthTarget, uint32_t Width, uint32_t Height, uint32_t BackbufferCount)
 {
 	//Note: Attachment Descriptions = Prototype, Framebuffer = Actual references
 	std::vector<vk::AttachmentDescription> AttachmentDescriptions;
@@ -18,24 +19,18 @@ void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*>& RenderT
 
 	std::vector<std::vector<vk::ImageView>> FramebufferImageViewsPerBackbuffer(BackbufferCount);
 
+	if (DepthTarget != nullptr)
+	{
+		RenderTargets.push_back(DepthTarget);
+	}
+
 	//[1] Iterate over attachments and create descriptions and references
 	for (uint32_t i = 0; i < RenderTargets.size(); ++i)
 	{
 		auto& RenderTarget = RenderTargets[i];
 		assert(RenderTarget->ImageViews.size() > 0);
 
-		vk::AttachmentDescription AttachmentDescription;
-		AttachmentDescription.format = RenderTarget->Format;
-		AttachmentDescription.samples = vk::SampleCountFlagBits::e1; //TODO: allow multisampling
-		AttachmentDescription.loadOp = RenderTarget->LoadOp;
-		AttachmentDescription.storeOp = RenderTarget->StoreOp;
-		AttachmentDescription.initialLayout = RenderTarget->InitialLayout;
-		AttachmentDescription.finalLayout = RenderTarget->FinalLayout;
-
-		AttachmentDescriptions.push_back(std::move(AttachmentDescription));
-
-		//TODO: Enforce only one depth attachment (per subpass, or renderpass at this point) here
-		if (RenderTarget->bDepthTarget)
+		if (RenderTarget == DepthTarget)
 		{
 			DepthAttachmentReference.attachment = i;
 			DepthAttachmentReference.layout = RenderTarget->UsageLayout;
@@ -47,6 +42,16 @@ void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*>& RenderT
 			AttachmentReference.layout = RenderTarget->UsageLayout;
 			ColorAttachmentReferences.push_back(std::move(AttachmentReference));
 		}
+
+		vk::AttachmentDescription AttachmentDescription;
+		AttachmentDescription.format = RenderTarget->Format;
+		AttachmentDescription.samples = vk::SampleCountFlagBits::e1; //TODO: allow multisampling
+		AttachmentDescription.loadOp = RenderTarget->LoadOp;
+		AttachmentDescription.storeOp = RenderTarget->StoreOp;
+		AttachmentDescription.initialLayout = RenderTarget->InitialLayout;
+		AttachmentDescription.finalLayout = RenderTarget->FinalLayout;
+
+		AttachmentDescriptions.push_back(std::move(AttachmentDescription));
 
 		//Add each image view of the render target (1 per backbuffer) to its corresponding framebuffer image view array
 		for (size_t i = 0; i < RenderTarget->ImageViews.size(); ++i)

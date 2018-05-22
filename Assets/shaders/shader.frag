@@ -12,5 +12,5 @@ layout(binding = 1) uniform sampler2D texSampler;
 
 void main() {
     outColor = texture(texSampler, fragTexCoord);
-    outSecondary = texture(texSampler, fragTexCoord) + vec4(1.0, 0.0, 0.0, 0.0);
+    outSecondary = texture(texSampler, fragTexCoord).bgra;
 }

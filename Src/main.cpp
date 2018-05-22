@@ -155,18 +155,13 @@ int main(int, char**)
 	//Scope block for implicit destruction of unique vulkan objects
 	{
 		//Testing adding an additional render target
-		VulkanRenderTarget TestRenderTarget;
 		VulkanImage RenderTargetImage(InitialWidth, InitialHeight, vk::Format::eR8G8B8A8Unorm, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eColorAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal);
+		VulkanRenderTarget TestRenderTarget;
+		TestRenderTarget.Format = RenderTargetImage.GetFormat();
 		for (auto& UniqueImageView : Context->GetSwapchain().GetImageViews())
 		{
 			TestRenderTarget.ImageViews.push_back(&RenderTargetImage.GetImageView());
 		}
-		TestRenderTarget.Format = RenderTargetImage.GetFormat();
-		TestRenderTarget.LoadOp = vk::AttachmentLoadOp::eClear;
-		TestRenderTarget.StoreOp = vk::AttachmentStoreOp::eStore;
-		TestRenderTarget.InitialLayout = vk::ImageLayout::eUndefined;
-		TestRenderTarget.UsageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TestRenderTarget.FinalLayout = vk::ImageLayout::eColorAttachmentOptimal;
 
 		VulkanRenderTarget ColorTarget;
 		for (auto& UniqueImageView : Context->GetSwapchain().GetImageViews())
@@ -174,8 +169,6 @@ int main(int, char**)
 			ColorTarget.ImageViews.push_back(&UniqueImageView.get());
 		}
 		ColorTarget.Format = Context->GetSwapchain().GetColorFormat();
-		ColorTarget.LoadOp = vk::AttachmentLoadOp::eClear;
-		ColorTarget.StoreOp = vk::AttachmentStoreOp::eStore;
 		ColorTarget.InitialLayout = vk::ImageLayout::eUndefined;
 		ColorTarget.UsageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		ColorTarget.FinalLayout = vk::ImageLayout::ePresentSrcKHR;
@@ -186,18 +179,15 @@ int main(int, char**)
 			DepthTarget.ImageViews.push_back(&Context->GetSwapchain().GetDepthView());
 		}
 		DepthTarget.Format = Context->GetSwapchain().GetDepthFormat();
-		DepthTarget.LoadOp = vk::AttachmentLoadOp::eClear;
 		DepthTarget.StoreOp = vk::AttachmentStoreOp::eDontCare;
-		DepthTarget.InitialLayout = vk::ImageLayout::eUndefined;
 		DepthTarget.UsageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 		DepthTarget.FinalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-		DepthTarget.bDepthTarget = true;
 
 		//Note: Order in array determines index in shader currently
-		std::vector<VulkanRenderTarget*> RenderTargets = { &ColorTarget, &TestRenderTarget, &DepthTarget};
+		std::vector<VulkanRenderTarget*> ColorTargets = { &ColorTarget, &TestRenderTarget};
 
 		VulkanRenderPass RenderPass;
-		RenderPass.BuildRenderPass(RenderTargets, Context->GetSwapchain().GetExtent().width, Context->GetSwapchain().GetExtent().height, (uint32_t)Context->GetSwapchain().GetImageViews().size());
+		RenderPass.BuildRenderPass(ColorTargets, &DepthTarget, Context->GetSwapchain().GetExtent().width, Context->GetSwapchain().GetExtent().height, (uint32_t)Context->GetSwapchain().GetImageViews().size());
 
 		std::string ImageName(ASSET_DIR + std::string("/textures/test.png"));
 		VulkanImage Image(ImageName);
@@ -218,8 +208,6 @@ int main(int, char**)
 		//Reference some resources in our render item
 		TestVulkanRenderItem.AddBufferResource("MVP", UniformBuffer.GetDescriptorInfo());
 		TestVulkanRenderItem.AddImageResource("texSampler", Image.GetDescriptorInfo());
-		/*TODO: FIXME: Currently it will result in a crash if the RenderItem doesn't have a resource 
-				for every descriptor in a descriptor set for a given pipeline */
 		
 		glm::vec3 CameraPosition(0.0f, 2.0f, 2.0f);
 		glm::vec3 Target(0,0,0);
@@ -388,7 +376,7 @@ int main(int, char**)
 					}
 				}
 				
-				RenderPass.BuildRenderPass(RenderTargets, Context->GetSwapchain().GetExtent().width, Context->GetSwapchain().GetExtent().height, (uint32_t)Context->GetSwapchain().GetImageViews().size());
+				RenderPass.BuildRenderPass(ColorTargets, &DepthTarget, Context->GetSwapchain().GetExtent().width, Context->GetSwapchain().GetExtent().height, (uint32_t)Context->GetSwapchain().GetImageViews().size());
 
 				Pipeline.Viewport.width = (float) Context->GetSwapchain().GetExtent().width;
 				Pipeline.Viewport.height = (float) Context->GetSwapchain().GetExtent().height;
