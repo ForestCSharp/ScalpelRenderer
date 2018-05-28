@@ -42,6 +42,10 @@ public:
 	//Adds commands to command buffer
 	void RecordCommands(VulkanCommandBuffer& CommandBuffer, size_t FrameIndex);
 
+	vk::Extent2D& GetExtent() { return Extent; }
+
+	uint32_t GetColorAttachmentCount() { return ColorAttachmentCount; }
+
 protected:
 
 	vk::UniqueRenderPass RenderPass;
@@ -52,4 +56,6 @@ protected:
 	VulkanCommandBuffer CommandBuffer;
 
 	vk::Extent2D Extent;
+
+	uint32_t ColorAttachmentCount = 0;
 };

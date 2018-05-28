@@ -12,6 +12,9 @@ VulkanRenderPass::VulkanRenderPass() : CommandBuffer(true /* bSecondary */)
 
 void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTargets, VulkanRenderTarget* DepthTarget, uint32_t Width, uint32_t Height, uint32_t BackbufferCount)
 {
+	//Used by Pipeline to determine number of color blends attachments to add
+	ColorAttachmentCount = (uint32_t)RenderTargets.size();
+
 	//Note: Attachment Descriptions = Prototype, Framebuffer = Actual references
 	std::vector<vk::AttachmentDescription> AttachmentDescriptions;
 	std::vector<vk::AttachmentReference> ColorAttachmentReferences;

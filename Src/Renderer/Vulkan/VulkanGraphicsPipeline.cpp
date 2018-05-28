@@ -10,7 +10,19 @@
 
 VulkanGraphicsPipeline::VulkanGraphicsPipeline()
 {
+	Viewport.minDepth = 0.f;
+	Viewport.maxDepth = 1.f;
 
+	Scissor.offset = {0,0};
+
+	Rasterizer.lineWidth = 1.0f;
+
+	ColorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR 
+										| vk::ColorComponentFlagBits::eG 
+										| vk::ColorComponentFlagBits::eB
+										| vk::ColorComponentFlagBits::eA;
+
+	DepthStencil.depthCompareOp = vk::CompareOp::eLess;
 }
 
 VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
@@ -20,6 +32,18 @@ VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
 
 void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const std::vector<unsigned int>& VertexSpirV, const std::vector<unsigned int>& FragmentSpirV)
 {	
+	//Set Width/Height from RenderPass
+	Viewport.width  = (float) RenderPass.GetExtent().width;
+	Viewport.height = (float) RenderPass.GetExtent().height;
+
+	Scissor.extent = RenderPass.GetExtent();
+
+	ColorBlending.attachmentCount = RenderPass.GetColorAttachmentCount();
+	std::vector<vk::PipelineColorBlendAttachmentState> BlendStates;
+	BlendStates.resize(ColorBlending.attachmentCount);
+	std::fill(BlendStates.begin(), BlendStates.end(), ColorBlendAttachment);
+	ColorBlending.pAttachments = BlendStates.data();
+
 	//TODO: Add additional shader stages
 
 	vk::GraphicsPipelineCreateInfo CreateInfo;

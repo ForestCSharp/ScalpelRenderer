@@ -227,60 +227,14 @@ int main(int, char**)
 			Uniform.UpdateUniformData(&Ubo, sizeof(UniformBufferObject));
 		};
 
-		/* ... Pipeline Setup Here ... */
-		//TODO: Better way to deal with all of this pipeline setup (perhaps a pipeline definition file that goes along with Shader SpirV)
-		//TODO: Pipeline derivation (faster creation, faster binding) (can derive parts of the create info)
+		//TODO: Pipeline derivation (faster creation, faster binding) (can derive parts of the create info)		
 		VulkanGraphicsPipeline Pipeline;
 
 		Pipeline.InputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
-		Pipeline.InputAssembly.primitiveRestartEnable = VK_FALSE;
-
-		Pipeline.Viewport.x = 0.f;
-		Pipeline.Viewport.y = 0.f;
-		Pipeline.Viewport.width = (float) Context->GetSwapchain().GetExtent().width;
-		Pipeline.Viewport.height = (float) Context->GetSwapchain().GetExtent().height;
-		Pipeline.Viewport.minDepth = 0.f;
-		Pipeline.Viewport.maxDepth = 1.f;
-
-		Pipeline.Scissor.offset = {0,0};
-		Pipeline.Scissor.extent = Context->GetSwapchain().GetExtent();
-
-		Pipeline.Rasterizer.depthClampEnable = VK_FALSE;
-		Pipeline.Rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		Pipeline.Rasterizer.polygonMode = vk::PolygonMode::eFill;
-		Pipeline.Rasterizer.lineWidth = 1.0f;
-		Pipeline.Rasterizer.cullMode = vk::CullModeFlagBits::eNone;
-		Pipeline.Rasterizer.frontFace = vk::FrontFace::eCounterClockwise;
-		Pipeline.Rasterizer.depthBiasEnable = VK_FALSE;
-
-		Pipeline.Multisampling.sampleShadingEnable = VK_FALSE;
-		Pipeline.Multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
-
-		Pipeline.ColorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR 
-													 | vk::ColorComponentFlagBits::eG 
-													 | vk::ColorComponentFlagBits::eB
-													 | vk::ColorComponentFlagBits::eA;
-		Pipeline.ColorBlendAttachment.blendEnable = VK_FALSE;
-
-		Pipeline.ColorBlending.logicOpEnable = VK_FALSE;
-		Pipeline.ColorBlending.logicOp = vk::LogicOp::eCopy; // Optional when off
-		Pipeline.ColorBlending.attachmentCount = 2; //TODO: 1 per color attachment, handle in buildpipeline
-		std::vector<vk::PipelineColorBlendAttachmentState> BlendStates = {Pipeline.ColorBlendAttachment, Pipeline.ColorBlendAttachment};
-		Pipeline.ColorBlending.pAttachments = BlendStates.data(); 
-		Pipeline.ColorBlending.blendConstants[0] = 0.0f;
-        Pipeline.ColorBlending.blendConstants[1] = 0.0f;
-        Pipeline.ColorBlending.blendConstants[2] = 0.0f;
-		Pipeline.ColorBlending.blendConstants[3] = 0.0f;
 
 		Pipeline.DepthStencil.depthTestEnable = VK_TRUE;
 		Pipeline.DepthStencil.depthWriteEnable = VK_TRUE;
-		Pipeline.DepthStencil.depthCompareOp = vk::CompareOp::eLess;
-		Pipeline.DepthStencil.minDepthBounds = 0.0f;
-		Pipeline.DepthStencil.maxDepthBounds = 1.0f;
-		Pipeline.DepthStencil.stencilTestEnable = VK_FALSE;
 
-		//Pipeline.DynamicStates.push_back(vk::DynamicState::eViewport);
-		
 		Pipeline.BuildPipeline(RenderPass, VertSpv, FragSpv);
 		/* ... End Pipeline Setup ... */
 
@@ -378,9 +332,6 @@ int main(int, char**)
 				
 				RenderPass.BuildRenderPass(ColorTargets, &DepthTarget, Context->GetSwapchain().GetExtent().width, Context->GetSwapchain().GetExtent().height, (uint32_t)Context->GetSwapchain().GetImageViews().size());
 
-				Pipeline.Viewport.width = (float) Context->GetSwapchain().GetExtent().width;
-				Pipeline.Viewport.height = (float) Context->GetSwapchain().GetExtent().height;
-				Pipeline.Scissor.extent = Context->GetSwapchain().GetExtent();
 				Pipeline.BuildPipeline(RenderPass, VertSpv, FragSpv);
 
 				BuildPrimaryCommandBuffers();
