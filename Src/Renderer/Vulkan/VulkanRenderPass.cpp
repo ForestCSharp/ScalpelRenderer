@@ -24,6 +24,7 @@ void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTa
 
 	if (DepthTarget != nullptr)
 	{
+		bHasDepthTarget = true;
 		RenderTargets.push_back(DepthTarget);
 	}
 
@@ -146,10 +147,19 @@ void VulkanRenderPass::BuildCommandBuffer(std::vector<std::pair<VulkanRenderItem
 
 void VulkanRenderPass::RecordCommands(VulkanCommandBuffer& CommandBuffer, size_t FrameIndex) 
 {
-	//TODO: Clear Values shouldn't be hard coded (should be part of render pass interface)
+	//TODO: Color and Depth Clear values should be part of RenderPass Interface
 	vk::ClearColorValue ClearColor(std::array<float, 4>{0.39f, 0.58f, 0.93f, 1.0f});
-	vk::ClearDepthStencilValue ClearDepth(1.0f, 0);
-	std::vector<vk::ClearValue> ClearValues = {ClearColor, ClearColor, ClearDepth};
+
+	std::vector<vk::ClearValue> ClearValues;
+	ClearValues.resize(GetColorAttachmentCount());
+	std::fill(ClearValues.begin(), ClearValues.end(), ClearColor);
+
+	if (bHasDepthTarget)
+	{
+		//Depth is always last element
+		vk::ClearDepthStencilValue ClearDepth(1.0f, 0);
+		ClearValues.push_back(ClearDepth);
+	}
 
 	vk::RenderPassBeginInfo BeginInfo;
 	BeginInfo.renderPass = GetHandle();

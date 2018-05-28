@@ -58,4 +58,6 @@ protected:
 	vk::Extent2D Extent;
 
 	uint32_t ColorAttachmentCount = 0;
+
+	bool bHasDepthTarget = false;
 };

@@ -37,6 +37,7 @@ void VulkanGraphicsPipeline::BuildPipeline(VulkanRenderPass& RenderPass, const s
 
 	Scissor.extent = RenderPass.GetExtent();
 
+	//Note: Currently Color Blending is effectively disabled when multiple attachments are present
 	ColorBlending.attachmentCount = RenderPass.GetColorAttachmentCount();
 	std::vector<vk::PipelineColorBlendAttachmentState> BlendStates;
 	BlendStates.resize(ColorBlending.attachmentCount);

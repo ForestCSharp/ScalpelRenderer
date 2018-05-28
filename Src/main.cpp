@@ -183,7 +183,7 @@ int main(int, char**)
 		DepthTarget.UsageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 		DepthTarget.FinalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
-		//Note: Order in array determines index in shader currently
+		//Note: currently the order in this array determines index in shader
 		std::vector<VulkanRenderTarget*> ColorTargets = { &ColorTarget, &TestRenderTarget};
 
 		VulkanRenderPass RenderPass;
