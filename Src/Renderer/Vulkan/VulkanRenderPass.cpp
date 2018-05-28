@@ -28,11 +28,16 @@ void VulkanRenderPass::BuildRenderPass(std::vector<VulkanRenderTarget*> RenderTa
 		RenderTargets.push_back(DepthTarget);
 	}
 
+	//Reset Clear Values
+	ClearValues.clear();
+
 	//[1] Iterate over attachments and create descriptions and references
 	for (uint32_t i = 0; i < RenderTargets.size(); ++i)
 	{
 		auto& RenderTarget = RenderTargets[i];
 		assert(RenderTarget->ImageViews.size() > 0);
+
+		ClearValues.push_back(RenderTarget->ClearValue);
 
 		if (RenderTarget == DepthTarget)
 		{
@@ -147,20 +152,6 @@ void VulkanRenderPass::BuildCommandBuffer(std::vector<std::pair<VulkanRenderItem
 
 void VulkanRenderPass::RecordCommands(VulkanCommandBuffer& CommandBuffer, size_t FrameIndex) 
 {
-	//TODO: Color and Depth Clear values should be part of RenderPass Interface
-	vk::ClearColorValue ClearColor(std::array<float, 4>{0.39f, 0.58f, 0.93f, 1.0f});
-
-	std::vector<vk::ClearValue> ClearValues;
-	ClearValues.resize(GetColorAttachmentCount());
-	std::fill(ClearValues.begin(), ClearValues.end(), ClearColor);
-
-	if (bHasDepthTarget)
-	{
-		//Depth is always last element
-		vk::ClearDepthStencilValue ClearDepth(1.0f, 0);
-		ClearValues.push_back(ClearDepth);
-	}
-
 	vk::RenderPassBeginInfo BeginInfo;
 	BeginInfo.renderPass = GetHandle();
 	BeginInfo.framebuffer = GetFramebuffers()[FrameIndex].get();

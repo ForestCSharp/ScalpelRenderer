@@ -157,11 +157,12 @@ int main(int, char**)
 		//Testing adding an additional render target
 		VulkanImage RenderTargetImage(InitialWidth, InitialHeight, vk::Format::eR8G8B8A8Unorm, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eColorAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal);
 		VulkanRenderTarget TestRenderTarget;
-		TestRenderTarget.Format = RenderTargetImage.GetFormat();
 		for (auto& UniqueImageView : Context->GetSwapchain().GetImageViews())
 		{
 			TestRenderTarget.ImageViews.push_back(&RenderTargetImage.GetImageView());
 		}
+		TestRenderTarget.Format = RenderTargetImage.GetFormat();
+		TestRenderTarget.ClearValue = vk::ClearColorValue(std::array<float, 4>{.81f, 0.21f, 0.48f, 1.0f});
 
 		VulkanRenderTarget ColorTarget;
 		for (auto& UniqueImageView : Context->GetSwapchain().GetImageViews())
@@ -169,6 +170,7 @@ int main(int, char**)
 			ColorTarget.ImageViews.push_back(&UniqueImageView.get());
 		}
 		ColorTarget.Format = Context->GetSwapchain().GetColorFormat();
+		ColorTarget.ClearValue = vk::ClearColorValue(std::array<float, 4>{.41f, 0.61f, 0.88f, 1.0f});
 		ColorTarget.InitialLayout = vk::ImageLayout::eUndefined;
 		ColorTarget.UsageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		ColorTarget.FinalLayout = vk::ImageLayout::ePresentSrcKHR;
@@ -179,6 +181,7 @@ int main(int, char**)
 			DepthTarget.ImageViews.push_back(&Context->GetSwapchain().GetDepthView());
 		}
 		DepthTarget.Format = Context->GetSwapchain().GetDepthFormat();
+		DepthTarget.ClearValue = vk::ClearDepthStencilValue(1.0f, 0);
 		DepthTarget.StoreOp = vk::AttachmentStoreOp::eDontCare;
 		DepthTarget.UsageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 		DepthTarget.FinalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;

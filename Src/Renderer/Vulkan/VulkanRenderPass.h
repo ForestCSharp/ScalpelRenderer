@@ -20,6 +20,7 @@ struct VulkanRenderTarget
 	//1 Image per back buffer
 	std::vector<vk::ImageView*> ImageViews;
 	vk::Format Format;
+	vk::ClearValue ClearValue;
 };
 
 class VulkanRenderPass
@@ -60,4 +61,6 @@ protected:
 	uint32_t ColorAttachmentCount = 0;
 
 	bool bHasDepthTarget = false;
+
+	std::vector<vk::ClearValue> ClearValues;
 };
