@@ -13,9 +13,8 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline()
 	Viewport.minDepth = 0.f;
 	Viewport.maxDepth = 1.f;
 
-	Scissor.offset = {0,0};
-
-	Rasterizer.lineWidth = 1.0f;
+	//Throws Validation Error if != 1.0 and w/o line width in dynamic states
+	Rasterizer.lineWidth = 1.0f; 
 
 	ColorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR 
 										| vk::ColorComponentFlagBits::eG 
