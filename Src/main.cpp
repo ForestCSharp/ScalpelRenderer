@@ -118,10 +118,10 @@ void HandleInput(GLFWwindow* window, const float& deltaSeconds, const float& Mou
 		glm::vec3 CamToTarget = glm::normalize(Target - CameraPosition);
 
 		//Yaw
-		CamToTarget = glm::mat3(glm::rotate(-4.0f * MouseDeltaX, CamUp)) * CamToTarget;
+		CamToTarget = glm::mat3(glm::rotate(-.4f * MouseDeltaX, CamUp)) * CamToTarget;
 
 		//Pitch
-		CamToTarget = glm::mat3(glm::rotate(-4.0f * MouseDeltaY, CamRight)) * CamToTarget;
+		CamToTarget = glm::mat3(glm::rotate(-.4f * MouseDeltaY, CamRight)) * CamToTarget;
 
 		Target = CameraPosition + CamToTarget;
 	}
@@ -222,7 +222,7 @@ int main(int, char**)
 			TotalTime += deltaSeconds;
 
 			UniformBufferObject Ubo;
-			Ubo.model = glm::rotate(glm::mat4(1.0f), TotalTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			Ubo.model = glm::rotate(glm::mat4(1.0f), TotalTime * glm::radians(27.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 			Ubo.view = glm::lookAt(CameraPosition, Target, UpVector);
 			Ubo.proj = glm::perspective(glm::radians(60.0f), Context->GetSwapchain().GetExtent().width / (float) Context->GetSwapchain().GetExtent().height, 0.001f, 10000.0f);
 			Ubo.proj[1][1] *= -1;
