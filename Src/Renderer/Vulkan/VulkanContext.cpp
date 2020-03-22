@@ -95,11 +95,7 @@ void VulkanContext::CreateInstance()
 
 bool VulkanContext::CheckExtensionSupport(const std::vector<const char*>& extensions)
 {
-    uint32_t extensionCount;
-    vk::enumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-    std::vector<vk::ExtensionProperties> availableExtensions(extensionCount);
-    vk::enumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
+	std::vector<vk::ExtensionProperties> availableExtensions = vk::enumerateInstanceExtensionProperties();
 
     for (const char* extensionName : extensions) 
     {
@@ -126,11 +122,7 @@ bool VulkanContext::CheckExtensionSupport(const std::vector<const char*>& extens
 
 bool VulkanContext::CheckValidationLayerSupport(const std::vector<const char*>& validationLayers)
 {
-    uint32_t layerCount;
-    vk::enumerateInstanceLayerProperties(&layerCount, nullptr);
-
-    std::vector<vk::LayerProperties> availableLayers(layerCount);
-    vk::enumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+	std::vector<vk::LayerProperties> availableLayers = vk::enumerateInstanceLayerProperties();
 
     for (const char* layerName : validationLayers) 
     {
